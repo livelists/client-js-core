@@ -1,0 +1,109 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "es6": true
+  },
+  "globals": {
+    "__CONFIG__": true,
+    "__ENV__": true
+  },
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "files": [
+      "*.ts", "*.tsx"
+    ],
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "project": "./tsconfig.json",
+    "tsconfigRootDir": "./",
+    "jsx": true,
+    "useJSXTextNode": true,
+    "ecmaFeatures": {
+      // Enabled object spread
+      "experimentalObjectRestSpread": true,
+      "jsx": true,
+      "modules": true
+    }
+  },
+  "extends": [
+    "airbnb-typescript",
+    "plugin:react/recommended",
+    "plugin:jsx-a11y/recommended",
+    "prettier",
+    "plugin:import/recommended",
+    "plugin:css-modules/recommended"
+  ],
+  "plugins": ["@typescript-eslint", "react", "jsx-a11y", "import", "css-modules"],
+  "settings": {
+    "react": {
+      "version": "detect"
+    },
+    "import/resolver": {
+      "node": {
+        "paths": ["src"]
+      }
+    }
+  },
+  // Rule changes from Airbnb's eslint config
+  "rules": {
+    "react/prop-types": 0,
+    "indent": [
+      "error",
+      4,
+      {
+        "SwitchCase": 1,
+        "ignoredNodes": ["TemplateLiteral"]
+      }
+    ],
+    "import/no-extraneous-dependencies": [
+      "error", {
+        "devDependencies": true
+      }
+    ],
+    "operator-linebreak": [
+      "error",
+      "after",
+      {
+        "overrides": {
+          "?": "before",
+          ":": "before"
+        }
+      }
+    ],
+    "react/jsx-uses-react": "error",
+    "react/jsx-uses-vars": "error",
+    "react/jsx-indent": ["error", 4],
+    "react/jsx-indent-props": ["error", 4],
+    "react/jsx-props-no-spreading": ["warn"],
+    "implicit-arrow-linebreak": 0,
+    "max-len": ["warn", { "code": 120 }],
+    "no-plusplus": 0,
+    "no-underscore-dangle": 0,
+    "import/prefer-default-export": 0,
+    "template-curly-spacing": 0,
+    "array-callback-return": 0,
+    "jsx-a11y/media-has-caption": 0,
+    "quotes": ["error", "single"],
+    "object-curly-spacing": ["error", "always"],
+    "no-multiple-empty-lines": ["error", { "max": 2, "maxEOF": 0 }],
+    "semi": ["error", "always"],
+    "import/order": ["error", {
+      "groups": ["builtin", "external", "internal"],
+      "pathGroups": [
+        {
+          "pattern": "react",
+          "group": "external",
+          "position": "before"
+        }
+      ],
+      "pathGroupsExcludedImportTypes": ["react"],
+      "newlines-between": "always",
+      "alphabetize": {
+        "order": "asc",
+        "caseInsensitive": true
+      }
+    }]
+  }
+}

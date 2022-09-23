@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { IChannelArgs } from '../hooks/types/channel';
+
+import { IChannelArgs } from './types/channel';
 
 //:TODO move react hooks to separate library
 export const useChannel = (args:IChannelArgs) =>  {
@@ -7,4 +8,4 @@ export const useChannel = (args:IChannelArgs) =>  {
     console.log(args);
 
     return socketId;
-}
+};
