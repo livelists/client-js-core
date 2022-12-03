@@ -1,6 +1,5 @@
-import { useChannel } from "./hooks/useChannel";
-
+import { Channel } from './channel/Channel';
 
 export {
-    useChannel,
-}
+    Channel,
+};
