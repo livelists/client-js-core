@@ -2,6 +2,7 @@ import { ConnectionError } from '../channel/errors';
 import Config from '../config/Config';
 import { logger } from '../config/logger';
 import { IWSResponse, WSEvents, WSResponse } from '../contracts/socketEvents';
+import { IOpenConnectionArgs, ISendMessageArgs } from '../types/websocket.types';
 
 export class WSConnector {
     private ws?:WebSocket;
@@ -12,22 +13,18 @@ export class WSConnector {
         logger.error('websocket error', ev);
     }
 
-    public openConnection ({
-        url,
-    }:{
-        url: string,
-    }) {
+    public openConnection (args:IOpenConnectionArgs) {
         logger.info('open connection');
         logger.info(Config.url);
 
         this.ws = undefined;
-        const ws = new WebSocket(url);
+        const ws = new WebSocket(args.url);
 
         return new Promise<void|IWSResponse>((resolve, reject) => {
             ws.onerror = async (ev: Event) => {
                 if (!this.ws) {
                     try {
-                        const resp = await fetch(`http${url.substring(2)}`);
+                        const resp = await fetch(`http${args.url.substring(2)}`);
                         if (!resp.ok) {
                             const msg = await resp.text();
                             reject(new ConnectionError(msg));
@@ -44,6 +41,7 @@ export class WSConnector {
 
             ws.onopen = () => {
                 this.ws = ws;
+                resolve();
             };
 
             ws.onmessage = async (ev: MessageEvent) => {
@@ -78,5 +76,9 @@ export class WSConnector {
                 }
             };
         });
+    }
+
+    public sendMessage (args:ISendMessageArgs) {
+        this.ws?.send(JSON.stringify(args.message));
     }
 }

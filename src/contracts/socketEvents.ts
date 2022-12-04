@@ -1,27 +1,33 @@
+import { JoinChannel, IJoinChannel } from './socketEventsModels';
+
 export enum WSEvents {
     ChannelJoin = 'channel:join'
 }
 
-interface IJoinResponse {
-    joinAt: Date,
+export interface IWSRoom {
+    channelId?: string,
 }
 
-type Responses = IJoinResponse;
+type EventData = IJoinChannel;
 
-interface WSEvent<Event extends WSEvents, Data extends Responses> {
+export interface IWSEvent<Event extends WSEvents, Data extends EventData> {
+    room: IWSRoom,
     event: Event,
     data: Data,
 }
 
 export interface IWSResponse {
-    message?: WSEvent<WSEvents.ChannelJoin, IJoinResponse>,
+    message?: IWSEvent<WSEvents.ChannelJoin, IJoinChannel>,
 }
 
 export const WSResponse = {
     fromJSON(object:any):IWSResponse {
         return {
             message: object.event === WSEvents.ChannelJoin
-                ? { event: WSEvents.ChannelJoin, data: { joinAt: new Date() } }
+                ? {
+                    event: WSEvents.ChannelJoin,
+                    room: object.room,
+                    data: JoinChannel.fromJSON(object) }
                 : undefined,
         };
     }

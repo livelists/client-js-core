@@ -2,12 +2,12 @@ function isSet(value: any): boolean {
     return value !== null && value !== undefined;
 }
 
-export interface IChannelJoin {
+export interface IJoinChannel {
     joinAt: Date,
 }
 
-export const ChannelJoin = {
-    fromJSON(object:any):IChannelJoin {
+export const JoinChannel = {
+    fromJSON(object:any):IJoinChannel {
         return {
             joinAt: isSet(object.joinAt) ? new Date(object.joinAt) : new Date()
         };
