@@ -19,29 +19,29 @@ type StructuredLogger = {
     error: (msg: string, context?: object) => void;
 };
 
-const logger = log.getLogger('livelists');
+const liveListLogger = log.getLogger('livelists');
 
-logger.setLevel(LogLevel.info);
-
-export default logger as StructuredLogger;
+liveListLogger.setLevel(LogLevel.info);
 
 export function setLogLevel(level: LogLevel | LogLevelString) {
-    logger.setLevel(level);
+    liveListLogger.setLevel(level);
 }
 
 export type LogExtension = (level: LogLevel, msg: string, context?: object) => void;
+
+export const logger = liveListLogger as StructuredLogger;
 
 /**
  * use this to hook into the logging function to allow sending internal livelists logs to third party services
  * if set, the browser logs will lose their stacktrace information (see https://github.com/pimterry/loglevel#writing-plugins)
  */
 export function setLogExtension(extension: LogExtension) {
-    const originalFactory = logger.methodFactory;
+    const originalFactory = liveListLogger.methodFactory;
 
-    logger.methodFactory = (methodName, logLevel, loggerName) => {
+    liveListLogger.methodFactory = (methodName, logLevel, loggerName) => {
         const rawMethod = originalFactory(methodName, logLevel, loggerName);
 
-        const configLevel = logger.getLevel();
+        const configLevel = liveListLogger.getLevel();
         const needLog = logLevel >= configLevel && logLevel < LogLevel.silent;
 
         return (msg, context?: [msg: string, context: object]) => {
@@ -52,5 +52,5 @@ export function setLogExtension(extension: LogExtension) {
             }
         };
     };
-    logger.setLevel(logger.getLevel()); // Be sure to call setLevel method in order to apply plugin
+    liveListLogger.setLevel(liveListLogger.getLevel()); // Be sure to call setLevel method in order to apply plugin
 }
