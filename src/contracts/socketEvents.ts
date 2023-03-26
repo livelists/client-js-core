@@ -1,7 +1,8 @@
 import { JoinChannel, IJoinChannel } from './socketEventsModels';
 
 export enum WSEvents {
-    ChannelJoin = 'channel:join'
+    ChannelJoin = 'channel:join',
+    SendMessage = 'channel:send:message'
 }
 
 export interface IWSRoom {
