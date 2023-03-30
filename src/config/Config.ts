@@ -1,6 +1,8 @@
 class Config {
     url: string = '';
 
+    accessToken: string = '';
+
     public setUrl (url:string) {
         if (url.startsWith('https')) {
             this.url = url.replace('https', 'wss');
@@ -9,6 +11,10 @@ class Config {
         } else {
             this.url = url;
         }
+    }
+
+    public setAccessToken(token:string) {
+        this.accessToken = token;
     }
 }
 
