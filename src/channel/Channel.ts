@@ -13,6 +13,7 @@ export class Channel {
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
+        Config.setAccessToken(args.accessToken);
 
         this.socket = new WSConnector();
         this.channelId = args.channelId;
@@ -20,6 +21,7 @@ export class Channel {
         this.connectionState = ConnectionStates.Connecting;
         const result = await this.socket.openConnection({
             url:  Config.url,
+            authToken: Config.accessToken,
         });
 
         if (result) {

@@ -18,13 +18,13 @@ export class WSConnector {
         logger.info(Config.url);
 
         this.ws = undefined;
-        const ws = new WebSocket(args.url);
+        const ws = new WebSocket(`${args.url}/?accessToken=${args.authToken}`);
 
         return new Promise<void|IWSResponse>((resolve, reject) => {
             ws.onerror = async (ev: Event) => {
                 if (!this.ws) {
                     try {
-                        const resp = await fetch(`http${args.url.substring(2)}`);
+                        const resp = await fetch(`http${args.url.substring(2)}/?accessToken=${args.authToken}`);
                         if (!resp.ok) {
                             const msg = await resp.text();
                             reject(new ConnectionError(msg));
