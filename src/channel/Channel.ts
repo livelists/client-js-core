@@ -1,5 +1,8 @@
+import { InBoundWsEvents, OutBoundWsEvents } from '../common/const/SocketEvents';
 import Config from '../config/Config';
-import { WSEvents } from '../contracts/socketEvents';
+import { logger } from '../config/logger';
+import { SendMessage } from '../proto/events';
+import { Message } from '../proto/models';
 import { WSConnector } from '../socket/WSConnector';
 import { IJoinArgs, IPublishMessage } from '../types/channel.types';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
@@ -16,42 +19,46 @@ export class Channel {
         Config.setAccessToken(args.accessToken);
 
         this.socket = new WSConnector();
-        this.channelId = args.channelId;
 
         this.connectionState = ConnectionStates.Connecting;
-        const result = await this.socket.openConnection({
-            url:  Config.url,
-            authToken: Config.accessToken,
-        });
 
-        if (result) {
-            this.connectionState = ConnectionStates.Connected;
-        } else {
+        this.socket.subscribe({
+            event: InBoundWsEvents.NewMessage,
+            cb: this.onNewMessage,
+        });
+        try {
+            await this.socket.openConnection({
+                url:  Config.url,
+                authToken: Config.accessToken,
+            });
+            this.socket.publishMessage({
+                $case: OutBoundWsEvents.JoinChannel,
+                [OutBoundWsEvents.JoinChannel]: {
+                    publishMeBecameOnline: true,
+                }
+            });
+        } catch (e) {
+            logger.error('Channel connection error');
             this.connectionState = ConnectionStates.ConnectionError;
         }
-
-        this.socket.sendMessage({
-            message: {
-                event: WSEvents.ChannelJoin,
-                room: {
-                    channelId: args.channelId,
-                },
-                data: {},
-            }
-        });
     }
 
     public async publishMessage(args:IPublishMessage) {
-        this.socket?.sendMessage({
-            message: {
-                event: WSEvents.SendMessage,
-                room: {
-                    channelId: this.channelId,
-                },
-                data: {
-                    text: args.text,
-                }
-            }
+        const messageData:SendMessage = {
+            text: args.text,
+        };
+
+        if (args.customData) {
+            messageData.customData = { data: args.customData };
+        }
+
+        this.socket?.publishMessage({
+            $case: OutBoundWsEvents.SendMessage,
+            [OutBoundWsEvents.SendMessage]: messageData,
         });
+    }
+
+    public onNewMessage (data:Message) {
+        console.log(data);
     }
 }
