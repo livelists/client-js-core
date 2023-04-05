@@ -11,10 +11,16 @@ module.exports = {
         clean: true
     },
     resolve: {
-        extensions: ['.ts', '.tsx']
+        extensions: ['.ts', '.tsx'],
+        alias: {
+            'node_modules': path.join(__dirname, 'node_modules'),
+        }
     },
     externals: {
-        react: 'react'
+        react: 'react',
+        protobufjs: 'protobufjs',
+        'protobufjs/minimal': 'protobufjs',
+        events: 'events',
     },
     module: {
         rules: [
