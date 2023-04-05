@@ -1,3 +1,5 @@
+import { EventEmitter } from 'events';
+
 import { InBoundWsEvents, OutBoundWsEvents } from '../common/const/SocketEvents';
 import Config from '../config/Config';
 import { logger } from '../config/logger';
@@ -6,13 +8,22 @@ import { Message } from '../proto/models';
 import { WSConnector } from '../socket/WSConnector';
 import { IJoinArgs, IPublishMessage } from '../types/channel.types';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
+import { ChannelEvents, IEmittedEvent, IOnEvent } from './const/EmittedEvents';
 
 export class Channel {
+    constructor() {
+        this.emitter = new EventEmitter();
+    }
+
+    private emitter:EventEmitter;
+
     private socket:WSConnector|undefined;
 
     public connectionState:ConnectionState = ConnectionStates.Disconnected;
 
     public channelId:string|undefined = undefined;
+
+    private recentMessages:Message[] = [];
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
@@ -24,7 +35,7 @@ export class Channel {
 
         this.socket.subscribe({
             event: InBoundWsEvents.NewMessage,
-            cb: this.onNewMessage,
+            cb: this.onNewMessage.bind(this),
         });
         try {
             await this.socket.openConnection({
@@ -59,6 +70,20 @@ export class Channel {
     }
 
     public onNewMessage (data:Message) {
-        console.log(data);
+        this.recentMessages = [...this.recentMessages, data];
+        this.emit({
+            event: ChannelEvents.RecentMessagesUpdated,
+            data: {
+                messages: this.recentMessages,
+            }
+        });
+    }
+
+    private emit (event:IEmittedEvent) {
+        this.emitter?.emit(event.event, event.data);
+    }
+
+    public on({ event, cb }:IOnEvent) {
+        this.emitter?.on(event, cb);
     }
 }

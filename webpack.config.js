@@ -20,6 +20,7 @@ module.exports = {
         react: 'react',
         protobufjs: 'protobufjs',
         'protobufjs/minimal': 'protobufjs',
+        events: 'events',
     },
     module: {
         rules: [
