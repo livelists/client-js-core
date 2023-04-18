@@ -5,5 +5,5 @@ export interface IJoinArgs {
 
 export interface IPublishMessage {
     text: string,
-    customData?: Record<string, string>
+    customData?: Record<string, string>,
 }

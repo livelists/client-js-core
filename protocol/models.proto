@@ -23,8 +23,9 @@ message Message {
   string text = 3;
   MessageType type = 4;
   MessageSubType subType = 5;
-  optional CustomData customData = 6;
-  google.protobuf.Timestamp createdAt = 7;
+  string localId = 6;
+  optional CustomData customData = 7;
+  google.protobuf.Timestamp createdAt = 8;
 }
 
 

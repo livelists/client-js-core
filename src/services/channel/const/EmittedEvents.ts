@@ -1,4 +1,4 @@
-import { Message } from '../../proto/models';
+import { LocalMessage } from '../../message/LocalMessage';
 
 export enum ChannelEvents {
     RecentMessagesUpdated = 'recentMessagesUpdated'
@@ -7,7 +7,7 @@ export enum ChannelEvents {
 export interface IRecentMessagesUpdated {
     event: ChannelEvents.RecentMessagesUpdated,
     data: {
-        messages: Message[]
+        messages: LocalMessage[]
     }
 }
 

@@ -2,7 +2,7 @@
 import _m0 from "protobufjs/minimal";
 import { CustomData, Message } from "./models";
 
-export const protobufPackage = "livekit";
+export const protobufPackage = "";
 
 export interface OutBoundMessage {
   message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel };
@@ -17,6 +17,7 @@ export interface InBoundMessage {
 
 export interface SendMessage {
   text: string;
+  localId: string;
   customData?: CustomData | undefined;
 }
 
@@ -199,7 +200,7 @@ export const InBoundMessage = {
 };
 
 function createBaseSendMessage(): SendMessage {
-  return { text: "", customData: undefined };
+  return { text: "", localId: "", customData: undefined };
 }
 
 export const SendMessage = {
@@ -207,8 +208,11 @@ export const SendMessage = {
     if (message.text !== "") {
       writer.uint32(10).string(message.text);
     }
+    if (message.localId !== "") {
+      writer.uint32(18).string(message.localId);
+    }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(18).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -224,6 +228,9 @@ export const SendMessage = {
           message.text = reader.string();
           break;
         case 2:
+          message.localId = reader.string();
+          break;
+        case 3:
           message.customData = CustomData.decode(reader, reader.uint32());
           break;
         default:
@@ -237,6 +244,7 @@ export const SendMessage = {
   fromJSON(object: any): SendMessage {
     return {
       text: isSet(object.text) ? String(object.text) : "",
+      localId: isSet(object.localId) ? String(object.localId) : "",
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
     };
   },
@@ -244,6 +252,7 @@ export const SendMessage = {
   toJSON(message: SendMessage): unknown {
     const obj: any = {};
     message.text !== undefined && (obj.text = message.text);
+    message.localId !== undefined && (obj.localId = message.localId);
     message.customData !== undefined &&
       (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     return obj;
@@ -256,6 +265,7 @@ export const SendMessage = {
   fromPartial<I extends Exact<DeepPartial<SendMessage>, I>>(object: I): SendMessage {
     const message = createBaseSendMessage();
     message.text = object.text ?? "";
+    message.localId = object.localId ?? "";
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;

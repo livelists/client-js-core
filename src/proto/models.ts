@@ -86,6 +86,7 @@ export interface Message {
   text: string;
   type: MessageType;
   subType: MessageSubType;
+  localId: string;
   customData?: CustomData | undefined;
   createdAt?: Date;
 }
@@ -151,7 +152,16 @@ export const ParticipantShortInfo = {
 };
 
 function createBaseMessage(): Message {
-  return { id: "", sender: undefined, text: "", type: 0, subType: 0, customData: undefined, createdAt: undefined };
+  return {
+    id: "",
+    sender: undefined,
+    text: "",
+    type: 0,
+    subType: 0,
+    localId: "",
+    customData: undefined,
+    createdAt: undefined,
+  };
 }
 
 export const Message = {
@@ -171,11 +181,14 @@ export const Message = {
     if (message.subType !== 0) {
       writer.uint32(40).int32(message.subType);
     }
+    if (message.localId !== "") {
+      writer.uint32(50).string(message.localId);
+    }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(50).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(58).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(58).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(66).fork()).ldelim();
     }
     return writer;
   },
@@ -203,9 +216,12 @@ export const Message = {
           message.subType = reader.int32() as any;
           break;
         case 6:
-          message.customData = CustomData.decode(reader, reader.uint32());
+          message.localId = reader.string();
           break;
         case 7:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        case 8:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
@@ -223,6 +239,7 @@ export const Message = {
       text: isSet(object.text) ? String(object.text) : "",
       type: isSet(object.type) ? messageTypeFromJSON(object.type) : 0,
       subType: isSet(object.subType) ? messageSubTypeFromJSON(object.subType) : 0,
+      localId: isSet(object.localId) ? String(object.localId) : "",
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
     };
@@ -236,6 +253,7 @@ export const Message = {
     message.text !== undefined && (obj.text = message.text);
     message.type !== undefined && (obj.type = messageTypeToJSON(message.type));
     message.subType !== undefined && (obj.subType = messageSubTypeToJSON(message.subType));
+    message.localId !== undefined && (obj.localId = message.localId);
     message.customData !== undefined &&
       (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
@@ -255,6 +273,7 @@ export const Message = {
     message.text = object.text ?? "";
     message.type = object.type ?? 0;
     message.subType = object.subType ?? 0;
+    message.localId = object.localId ?? "";
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;

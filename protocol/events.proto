@@ -21,7 +21,8 @@ message InBoundMessage {
 
 message SendMessage {
   string text = 1;
-  optional CustomData customData = 2;
+  string localId = 2;
+  optional CustomData customData = 3;
 }
 
 message JoinChannel {

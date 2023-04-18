@@ -1,12 +1,12 @@
 import { EventEmitter } from 'events';
 
-import { InBoundWsEvents, OutBoundWsEvents } from '../common/const/SocketEvents';
-import Config from '../config/Config';
-import { logger } from '../config/logger';
-import { SendMessage } from '../proto/events';
-import { Message } from '../proto/models';
-import { WSConnector } from '../socket/WSConnector';
-import { IJoinArgs, IPublishMessage } from '../types/channel.types';
+import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
+import Config from '../../config/Config';
+import { logger } from '../../config/logger';
+import { Message as MessagePB } from '../../proto/models';
+import { WSConnector } from '../../socket/WSConnector';
+import { IJoinArgs, IPublishMessage } from '../../types/channel.types';
+import { LocalMessage } from '../message/LocalMessage';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
 import { ChannelEvents, IEmittedEvent, IOnEvent } from './const/EmittedEvents';
 
@@ -23,7 +23,7 @@ export class Channel {
 
     public channelId:string|undefined = undefined;
 
-    private recentMessages:Message[] = [];
+    private recentMessages:LocalMessage[] = [];
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
@@ -55,22 +55,19 @@ export class Channel {
     }
 
     public async publishMessage(args:IPublishMessage) {
-        const messageData:SendMessage = {
-            text: args.text,
-        };
+        const localMessage = new LocalMessage(args);
 
-        if (args.customData) {
-            messageData.customData = { data: args.customData };
-        }
+        this.recentMessages = [...this.recentMessages, localMessage];
 
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.SendMessage,
-            [OutBoundWsEvents.SendMessage]: messageData,
+            [OutBoundWsEvents.SendMessage]: localMessage.getMessageForSending(),
         });
     }
 
-    public onNewMessage (data:Message) {
-        this.recentMessages = [...this.recentMessages, data];
+    public onNewMessage (data:MessagePB) {
+        const localMessage = new LocalMessage(data);
+        this.recentMessages = [...this.recentMessages, localMessage];
         this.emit({
             event: ChannelEvents.RecentMessagesUpdated,
             data: {

@@ -1,9 +1,9 @@
-import { ConnectionError } from '../channel/errors';
 import { InBoundWsEvents } from '../common/const/SocketEvents';
 import Config from '../config/Config';
 import { logger } from '../config/logger';
 import { InBoundMessage, MeJoinedToChannel, OutBoundMessage } from '../proto/events';
 import { Message } from '../proto/models';
+import { ConnectionError } from '../services/channel/errors';
 import { IOpenConnectionArgs } from '../types/websocket.types';
 
 type OutBoundMessageData = OutBoundMessage['message']
@@ -150,7 +150,7 @@ export class WSConnector {
             case InBoundWsEvents.NewMessage:
                 this.callListeners({
                     event: event as InBoundWsEvents,
-                    data: message.message?.newMessage
+                    data: message.message?.newMessage,
                 });
                 break;
             case InBoundWsEvents.MeJoinedToChannel:
