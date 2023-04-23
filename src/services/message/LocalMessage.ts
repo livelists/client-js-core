@@ -1,11 +1,11 @@
 import { SendMessage } from '../../proto/events';
 import { Message as MessagePB, MessageSubType, MessageType } from '../../proto/models';
-import { IPublishMessage } from '../../types/channel.types';
+import { IPublishMessageArgs } from '../../types/channel.types';
 import { ILocalMessage } from '../../types/message.types';
 import { generateRandomString } from '../../utils/string/generateRandomString';
 
 export class LocalMessage {
-    constructor(message: IPublishMessage | MessagePB) {
+    constructor(message: IPublishMessageArgs | MessagePB) {
         const anyMessage = message as any;
         if (anyMessage?.localId) {
             this.wrapSentMessage(anyMessage);
@@ -20,7 +20,7 @@ export class LocalMessage {
         return this._message as ILocalMessage;
     }
 
-    private wrapSentMessage = (message:IPublishMessage) => {
+    private wrapSentMessage = (message:IPublishMessageArgs) => {
         const localId = generateRandomString(8);
 
         this._message = {

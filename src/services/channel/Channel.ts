@@ -5,7 +5,11 @@ import Config from '../../config/Config';
 import { logger } from '../../config/logger';
 import { Message as MessagePB } from '../../proto/models';
 import { WSConnector } from '../../socket/WSConnector';
-import { IJoinArgs, IPublishMessage } from '../../types/channel.types';
+import {
+    IJoinArgs,
+    ILoadMoreMessagesArgs,
+    IPublishMessageArgs,
+} from '../../types/channel.types';
 import { LocalMessage } from '../message/LocalMessage';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
 import { ChannelEvents, IEmittedEvent, IOnEvent } from './const/EmittedEvents';
@@ -19,11 +23,17 @@ export class Channel {
 
     private socket:WSConnector|undefined;
 
+    private emit (event:IEmittedEvent) {
+        this.emitter?.emit(event.event, event.data);
+    }
+
     public connectionState:ConnectionState = ConnectionStates.Disconnected;
 
     public channelId:string|undefined = undefined;
 
     private recentMessages:LocalMessage[] = [];
+
+    private isLoadingMore = false;
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
@@ -54,7 +64,7 @@ export class Channel {
         }
     }
 
-    public async publishMessage(args:IPublishMessage) {
+    public async publishMessage(args:IPublishMessageArgs) {
         const localMessage = new LocalMessage(args);
 
         this.recentMessages = [...this.recentMessages, localMessage];
@@ -65,19 +75,33 @@ export class Channel {
         });
     }
 
-    public onNewMessage (data:MessagePB) {
-        const localMessage = new LocalMessage(data);
-        this.recentMessages = [...this.recentMessages, localMessage];
+    public loadHistoryMessages(args:ILoadMoreMessagesArgs) {
+        this.isLoadingMore = true;
+    }
+
+    private pushMessageToList (localMessage:LocalMessage) {
+        const sentMessageIndex =
+            this.recentMessages.findIndex(
+                (m) => m.message.message.localId = localMessage.message.message.localId
+            );
+
+        if (sentMessageIndex !== -1) {
+            this.recentMessages = [...this.recentMessages, localMessage];
+        } else {
+            const mySentMessageCopy = this.recentMessages[sentMessageIndex];
+            mySentMessageCopy.message.localMeta.isAck = true;
+        }
+    }
+
+    public onNewMessage (args:MessagePB) {
+        const localMessage = new LocalMessage(args);
+        this.pushMessageToList(localMessage);
         this.emit({
             event: ChannelEvents.RecentMessagesUpdated,
             data: {
                 messages: this.recentMessages,
             }
         });
-    }
-
-    private emit (event:IEmittedEvent) {
-        this.emitter?.emit(event.event, event.data);
     }
 
     public on({ event, cb }:IOnEvent) {
