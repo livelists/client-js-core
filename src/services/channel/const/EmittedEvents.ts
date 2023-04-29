@@ -1,7 +1,10 @@
 import { LocalMessage } from '../../message/LocalMessage';
+import { ConnectionState } from './ConnectionState';
 
 export enum ChannelEvents {
-    RecentMessagesUpdated = 'recentMessagesUpdated'
+    RecentMessagesUpdated = 'recentMessagesUpdated',
+    HistoryMessagesUpdated = 'historyMessagesUpdated',
+    ConnectionStateUpdated = 'connectionStateUpdated'
 }
 
 export interface IRecentMessagesUpdated {
@@ -11,8 +14,22 @@ export interface IRecentMessagesUpdated {
     }
 }
 
-export type IEmittedEvent = IRecentMessagesUpdated
-export type IOnEvent = {
-    event: IRecentMessagesUpdated['event'],
-    cb: (data:IRecentMessagesUpdated['data']) => void,
+export interface IHistoryMessagesUpdated {
+    event: ChannelEvents.HistoryMessagesUpdated,
+    data: {
+        messages: LocalMessage[]
+    }
+}
+
+export interface IConnectionStateUpdated {
+    event: ChannelEvents.ConnectionStateUpdated,
+    data: {
+        connectionState: ConnectionState,
+    }
+}
+
+export type IEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated;
+export type IOnEvent<E, D> = {
+    event: E,
+    cb: (data:D) => void,
 }

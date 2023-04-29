@@ -1,7 +1,11 @@
+export interface IChannelArgs {
+    initialPageSize: number,
+    initialOffset: number,
+}
+
 export interface IJoinArgs {
     url: string,
     accessToken: string,
-    initialPageSize: number,
 }
 
 export interface IPublishMessageArgs {

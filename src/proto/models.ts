@@ -77,7 +77,8 @@ export function messageSubTypeToJSON(object: MessageSubType): string {
 }
 
 export interface ParticipantShortInfo {
-  id: string;
+  identifier: string;
+  customData?: CustomData | undefined;
 }
 
 export interface Message {
@@ -86,7 +87,7 @@ export interface Message {
   text: string;
   type: MessageType;
   subType: MessageSubType;
-  localId: string;
+  localId?: string | undefined;
   customData?: CustomData | undefined;
   createdAt?: Date;
 }
@@ -101,13 +102,16 @@ export interface CustomData_DataEntry {
 }
 
 function createBaseParticipantShortInfo(): ParticipantShortInfo {
-  return { id: "" };
+  return { identifier: "", customData: undefined };
 }
 
 export const ParticipantShortInfo = {
   encode(message: ParticipantShortInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.id !== "") {
-      writer.uint32(10).string(message.id);
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    if (message.customData !== undefined) {
+      CustomData.encode(message.customData, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -120,7 +124,10 @@ export const ParticipantShortInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.id = reader.string();
+          message.identifier = reader.string();
+          break;
+        case 2:
+          message.customData = CustomData.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -131,12 +138,17 @@ export const ParticipantShortInfo = {
   },
 
   fromJSON(object: any): ParticipantShortInfo {
-    return { id: isSet(object.id) ? String(object.id) : "" };
+    return {
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
+    };
   },
 
   toJSON(message: ParticipantShortInfo): unknown {
     const obj: any = {};
-    message.id !== undefined && (obj.id = message.id);
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.customData !== undefined &&
+      (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     return obj;
   },
 
@@ -146,7 +158,10 @@ export const ParticipantShortInfo = {
 
   fromPartial<I extends Exact<DeepPartial<ParticipantShortInfo>, I>>(object: I): ParticipantShortInfo {
     const message = createBaseParticipantShortInfo();
-    message.id = object.id ?? "";
+    message.identifier = object.identifier ?? "";
+    message.customData = (object.customData !== undefined && object.customData !== null)
+      ? CustomData.fromPartial(object.customData)
+      : undefined;
     return message;
   },
 };
@@ -158,7 +173,7 @@ function createBaseMessage(): Message {
     text: "",
     type: 0,
     subType: 0,
-    localId: "",
+    localId: undefined,
     customData: undefined,
     createdAt: undefined,
   };
@@ -181,7 +196,7 @@ export const Message = {
     if (message.subType !== 0) {
       writer.uint32(40).int32(message.subType);
     }
-    if (message.localId !== "") {
+    if (message.localId !== undefined) {
       writer.uint32(50).string(message.localId);
     }
     if (message.customData !== undefined) {
@@ -239,7 +254,7 @@ export const Message = {
       text: isSet(object.text) ? String(object.text) : "",
       type: isSet(object.type) ? messageTypeFromJSON(object.type) : 0,
       subType: isSet(object.subType) ? messageSubTypeFromJSON(object.subType) : 0,
-      localId: isSet(object.localId) ? String(object.localId) : "",
+      localId: isSet(object.localId) ? String(object.localId) : undefined,
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
     };
@@ -273,7 +288,7 @@ export const Message = {
     message.text = object.text ?? "";
     message.type = object.type ?? 0;
     message.subType = object.subType ?? 0;
-    message.localId = object.localId ?? "";
+    message.localId = object.localId ?? undefined;
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;
@@ -289,7 +304,7 @@ function createBaseCustomData(): CustomData {
 export const CustomData = {
   encode(message: CustomData, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
     Object.entries(message.data).forEach(([key, value]) => {
-      CustomData_DataEntry.encode({ key: key as any, value }, writer.uint32(50).fork()).ldelim();
+      CustomData_DataEntry.encode({ key: key as any, value }, writer.uint32(10).fork()).ldelim();
     });
     return writer;
   },
@@ -301,10 +316,10 @@ export const CustomData = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
-        case 6:
-          const entry6 = CustomData_DataEntry.decode(reader, reader.uint32());
-          if (entry6.value !== undefined) {
-            message.data[entry6.key] = entry6.value;
+        case 1:
+          const entry1 = CustomData_DataEntry.decode(reader, reader.uint32());
+          if (entry1.value !== undefined) {
+            message.data[entry1.key] = entry1.value;
           }
           break;
         default:
