@@ -1,9 +1,26 @@
-import { Channel } from './channel/Channel';
-import { ChannelEvents } from './channel/const/EmittedEvents';
 import { Message } from './proto/models';
+import { Channel } from './services/channel/Channel';
+import { ConnectionState, ConnectionStates } from './services/channel/const/ConnectionState';
+import {
+    ChannelEvents,
+    IOnEvent,
+    IRecentMessagesUpdated,
+    IHistoryMessagesUpdated,
+    IConnectionStateUpdated,
+    IEmittedEvent
+} from './services/channel/const/EmittedEvents';
+import { LocalMessage } from './services/message/LocalMessage';
 
 export {
     Channel,
     Message,
+    LocalMessage,
     ChannelEvents,
+    ConnectionState,
+    IRecentMessagesUpdated,
+    IHistoryMessagesUpdated,
+    IConnectionStateUpdated,
+    IEmittedEvent,
+    IOnEvent,
+    ConnectionStates,
 };

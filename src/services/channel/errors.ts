@@ -1,4 +1,4 @@
-import { CommonError } from '../utils/errors/common.errors';
+import { CommonError } from '../../utils/errors/common.errors';
 
 enum ErrorCodes {
     ConnectionError = 'connectionError',

@@ -1,8 +1,9 @@
 /* eslint-disable */
+import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { CustomData, Message } from "./models";
 
-export const protobufPackage = "livekit";
+export const protobufPackage = "";
 
 export interface OutBoundMessage {
   message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel };
@@ -17,16 +18,24 @@ export interface InBoundMessage {
 
 export interface SendMessage {
   text: string;
+  localId: string;
   customData?: CustomData | undefined;
 }
 
 export interface JoinChannel {
-  publishMeBecameOnline: boolean;
+  initialPageSize: number;
+  initialOffset: number;
+}
+
+export interface ChannelInitialInfo {
+  channelId: string;
+  historyMessages: Message[];
 }
 
 export interface MeJoinedToChannel {
   meIdentifier: string;
-  channelId: string;
+  isSuccess: boolean;
+  channel?: ChannelInitialInfo;
 }
 
 function createBaseOutBoundMessage(): OutBoundMessage {
@@ -199,7 +208,7 @@ export const InBoundMessage = {
 };
 
 function createBaseSendMessage(): SendMessage {
-  return { text: "", customData: undefined };
+  return { text: "", localId: "", customData: undefined };
 }
 
 export const SendMessage = {
@@ -207,8 +216,11 @@ export const SendMessage = {
     if (message.text !== "") {
       writer.uint32(10).string(message.text);
     }
+    if (message.localId !== "") {
+      writer.uint32(18).string(message.localId);
+    }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(18).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -224,6 +236,9 @@ export const SendMessage = {
           message.text = reader.string();
           break;
         case 2:
+          message.localId = reader.string();
+          break;
+        case 3:
           message.customData = CustomData.decode(reader, reader.uint32());
           break;
         default:
@@ -237,6 +252,7 @@ export const SendMessage = {
   fromJSON(object: any): SendMessage {
     return {
       text: isSet(object.text) ? String(object.text) : "",
+      localId: isSet(object.localId) ? String(object.localId) : "",
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
     };
   },
@@ -244,6 +260,7 @@ export const SendMessage = {
   toJSON(message: SendMessage): unknown {
     const obj: any = {};
     message.text !== undefined && (obj.text = message.text);
+    message.localId !== undefined && (obj.localId = message.localId);
     message.customData !== undefined &&
       (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     return obj;
@@ -256,6 +273,7 @@ export const SendMessage = {
   fromPartial<I extends Exact<DeepPartial<SendMessage>, I>>(object: I): SendMessage {
     const message = createBaseSendMessage();
     message.text = object.text ?? "";
+    message.localId = object.localId ?? "";
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;
@@ -264,13 +282,16 @@ export const SendMessage = {
 };
 
 function createBaseJoinChannel(): JoinChannel {
-  return { publishMeBecameOnline: false };
+  return { initialPageSize: 0, initialOffset: 0 };
 }
 
 export const JoinChannel = {
   encode(message: JoinChannel, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.publishMeBecameOnline === true) {
-      writer.uint32(8).bool(message.publishMeBecameOnline);
+    if (message.initialPageSize !== 0) {
+      writer.uint32(8).int64(message.initialPageSize);
+    }
+    if (message.initialOffset !== 0) {
+      writer.uint32(16).int64(message.initialOffset);
     }
     return writer;
   },
@@ -283,7 +304,10 @@ export const JoinChannel = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.publishMeBecameOnline = reader.bool();
+          message.initialPageSize = longToNumber(reader.int64() as Long);
+          break;
+        case 2:
+          message.initialOffset = longToNumber(reader.int64() as Long);
           break;
         default:
           reader.skipType(tag & 7);
@@ -295,13 +319,15 @@ export const JoinChannel = {
 
   fromJSON(object: any): JoinChannel {
     return {
-      publishMeBecameOnline: isSet(object.publishMeBecameOnline) ? Boolean(object.publishMeBecameOnline) : false,
+      initialPageSize: isSet(object.initialPageSize) ? Number(object.initialPageSize) : 0,
+      initialOffset: isSet(object.initialOffset) ? Number(object.initialOffset) : 0,
     };
   },
 
   toJSON(message: JoinChannel): unknown {
     const obj: any = {};
-    message.publishMeBecameOnline !== undefined && (obj.publishMeBecameOnline = message.publishMeBecameOnline);
+    message.initialPageSize !== undefined && (obj.initialPageSize = Math.round(message.initialPageSize));
+    message.initialOffset !== undefined && (obj.initialOffset = Math.round(message.initialOffset));
     return obj;
   },
 
@@ -311,13 +337,82 @@ export const JoinChannel = {
 
   fromPartial<I extends Exact<DeepPartial<JoinChannel>, I>>(object: I): JoinChannel {
     const message = createBaseJoinChannel();
-    message.publishMeBecameOnline = object.publishMeBecameOnline ?? false;
+    message.initialPageSize = object.initialPageSize ?? 0;
+    message.initialOffset = object.initialOffset ?? 0;
+    return message;
+  },
+};
+
+function createBaseChannelInitialInfo(): ChannelInitialInfo {
+  return { channelId: "", historyMessages: [] };
+}
+
+export const ChannelInitialInfo = {
+  encode(message: ChannelInitialInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
+    for (const v of message.historyMessages) {
+      Message.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChannelInitialInfo {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChannelInitialInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channelId = reader.string();
+          break;
+        case 2:
+          message.historyMessages.push(Message.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChannelInitialInfo {
+    return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      historyMessages: Array.isArray(object?.historyMessages)
+        ? object.historyMessages.map((e: any) => Message.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ChannelInitialInfo): unknown {
+    const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    if (message.historyMessages) {
+      obj.historyMessages = message.historyMessages.map((e) => e ? Message.toJSON(e) : undefined);
+    } else {
+      obj.historyMessages = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ChannelInitialInfo>, I>>(base?: I): ChannelInitialInfo {
+    return ChannelInitialInfo.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ChannelInitialInfo>, I>>(object: I): ChannelInitialInfo {
+    const message = createBaseChannelInitialInfo();
+    message.channelId = object.channelId ?? "";
+    message.historyMessages = object.historyMessages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseMeJoinedToChannel(): MeJoinedToChannel {
-  return { meIdentifier: "", channelId: "" };
+  return { meIdentifier: "", isSuccess: false, channel: undefined };
 }
 
 export const MeJoinedToChannel = {
@@ -325,8 +420,11 @@ export const MeJoinedToChannel = {
     if (message.meIdentifier !== "") {
       writer.uint32(10).string(message.meIdentifier);
     }
-    if (message.channelId !== "") {
-      writer.uint32(18).string(message.channelId);
+    if (message.isSuccess === true) {
+      writer.uint32(16).bool(message.isSuccess);
+    }
+    if (message.channel !== undefined) {
+      ChannelInitialInfo.encode(message.channel, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -342,7 +440,10 @@ export const MeJoinedToChannel = {
           message.meIdentifier = reader.string();
           break;
         case 2:
-          message.channelId = reader.string();
+          message.isSuccess = reader.bool();
+          break;
+        case 3:
+          message.channel = ChannelInitialInfo.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -355,14 +456,17 @@ export const MeJoinedToChannel = {
   fromJSON(object: any): MeJoinedToChannel {
     return {
       meIdentifier: isSet(object.meIdentifier) ? String(object.meIdentifier) : "",
-      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      isSuccess: isSet(object.isSuccess) ? Boolean(object.isSuccess) : false,
+      channel: isSet(object.channel) ? ChannelInitialInfo.fromJSON(object.channel) : undefined,
     };
   },
 
   toJSON(message: MeJoinedToChannel): unknown {
     const obj: any = {};
     message.meIdentifier !== undefined && (obj.meIdentifier = message.meIdentifier);
-    message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.isSuccess !== undefined && (obj.isSuccess = message.isSuccess);
+    message.channel !== undefined &&
+      (obj.channel = message.channel ? ChannelInitialInfo.toJSON(message.channel) : undefined);
     return obj;
   },
 
@@ -373,10 +477,32 @@ export const MeJoinedToChannel = {
   fromPartial<I extends Exact<DeepPartial<MeJoinedToChannel>, I>>(object: I): MeJoinedToChannel {
     const message = createBaseMeJoinedToChannel();
     message.meIdentifier = object.meIdentifier ?? "";
-    message.channelId = object.channelId ?? "";
+    message.isSuccess = object.isSuccess ?? false;
+    message.channel = (object.channel !== undefined && object.channel !== null)
+      ? ChannelInitialInfo.fromPartial(object.channel)
+      : undefined;
     return message;
   },
 };
+
+declare var self: any | undefined;
+declare var window: any | undefined;
+declare var global: any | undefined;
+var tsProtoGlobalThis: any = (() => {
+  if (typeof globalThis !== "undefined") {
+    return globalThis;
+  }
+  if (typeof self !== "undefined") {
+    return self;
+  }
+  if (typeof window !== "undefined") {
+    return window;
+  }
+  if (typeof global !== "undefined") {
+    return global;
+  }
+  throw "Unable to locate global object";
+})();
 
 type Builtin = Date | Function | Uint8Array | string | number | boolean | undefined;
 
@@ -389,6 +515,18 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function longToNumber(long: Long): number {
+  if (long.gt(Number.MAX_SAFE_INTEGER)) {
+    throw new tsProtoGlobalThis.Error("Value is larger than Number.MAX_SAFE_INTEGER");
+  }
+  return long.toNumber();
+}
+
+if (_m0.util.Long !== Long) {
+  _m0.util.Long = Long as any;
+  _m0.configure();
+}
 
 function isSet(value: any): boolean {
   return value !== null && value !== undefined;
