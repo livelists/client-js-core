@@ -1,20 +1,24 @@
 import { SendMessage } from '../../proto/events';
 import { Message as MessagePB, MessageSubType, MessageType } from '../../proto/models';
 import { IPublishMessageArgs } from '../../types/channel.types';
-import { ILocalMessage } from '../../types/message.types';
+import { ILocalMessage, ILocalMessageArgs } from '../../types/message.types';
 import { generateRandomString } from '../../utils/string/generateRandomString';
+import { LocalParticipant } from '../participant/LocalParticipant';
 
 export class LocalMessage {
-    constructor(message: IPublishMessageArgs | MessagePB) {
+    constructor({ message, meLocalParticipant }:ILocalMessageArgs) {
         const anyMessage = message as any;
-        if (anyMessage?.localId) {
-            this.wrapSentMessage(anyMessage);
-        } else {
+        this._meLocalParticipant = meLocalParticipant;
+        if (anyMessage?.id) {
             this.wrapReceivedMessage(anyMessage);
+        } else {
+            this.wrapSentMessage(anyMessage);
         }
     }
 
     private _message:ILocalMessage|undefined = undefined;
+
+    private _meLocalParticipant:LocalParticipant;
 
     public get message():ILocalMessage {
         return this._message as ILocalMessage;
@@ -27,18 +31,25 @@ export class LocalMessage {
             message: {
                 id: localId,
                 text: message.text,
-                type: MessageType.Participant,
+                type: MessageType.ParticipantCreated,
+                sender: {
+                    identifier: this._meLocalParticipant.identifier,
+                    customData: this._meLocalParticipant.customData ? {
+                        data: this._meLocalParticipant.customData
+                    } : undefined,
+                },
                 subType: MessageSubType.TextMessage,
-                localId,
+                localId: localId,
                 customData: message.customData ? {
                     data: message.customData,
                 } : undefined,
                 createdAt: new Date(),
             },
             localMeta: {
-                sentAt: Date.now(),
+                sentAt: new Date(),
                 isAck: false,
                 isRead: true,
+                isMy: true,
             }
         };
     };
@@ -49,6 +60,7 @@ export class LocalMessage {
             localMeta: {
                 isAck: true,
                 isRead: false,
+                isMy: message.sender?.identifier === this._meLocalParticipant.identifier,
             }
         };
     };

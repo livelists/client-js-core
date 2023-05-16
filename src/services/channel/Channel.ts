@@ -3,13 +3,16 @@ import { EventEmitter } from 'events';
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
 import Config from '../../config/Config';
 import { logger } from '../../config/logger';
-import { MeJoinedToChannel } from '../../proto/events';
-import { Message as MessagePB } from '../../proto/models';
+import { LoadMoreMessagesRes, MeJoinedToChannel } from '../../proto/events';
+import { ChannelParticipantGrants, Message as MessagePB } from '../../proto/models';
 import { WSConnector } from '../../socket/WSConnector';
 import { IChannelArgs, IJoinArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
+import { CustomData } from '../../types/common.types';
 import { LocalMessage } from '../message/LocalMessage';
+import { LocalParticipant } from '../participant/LocalParticipant';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
 import { ChannelEvents, IEmittedEvent, IOnEvent } from './const/EmittedEvents';
+import { LoadMoreMessagesError, MyLocalParticipantNotExistError } from './errors';
 
 export class Channel {
     constructor({
@@ -28,6 +31,8 @@ export class Channel {
     private initialOffset:number;
 
     private socket:WSConnector|undefined;
+
+    private localParticipant:LocalParticipant|undefined;
 
     private emit (event:IEmittedEvent) {
         this.emitter?.emit(event.event, event.data);
@@ -49,8 +54,7 @@ export class Channel {
 
         this.socket = new WSConnector();
 
-        this.connectionState = ConnectionStates.Connecting;
-        this.emitUpdateConnectionState();
+        this.updateConnectionState(ConnectionStates.Connecting);
 
         try {
             await this.socket.openConnection({
@@ -73,15 +77,24 @@ export class Channel {
                 event: InBoundWsEvents.MeJoinedToChannel,
                 cb: this.onMeJoinedToChannel.bind(this)
             });
+            this.socket.subscribe({
+                event: InBoundWsEvents.LoadMoreMessagesRes,
+                cb: this.onLoadMoreMessagesRes.bind(this)
+            });
         } catch (e) {
             logger.error('Channel connection error');
-            this.connectionState = ConnectionStates.ConnectionError;
-            this.emitUpdateConnectionState();
+            this.updateConnectionState(ConnectionStates.ConnectionError);
         }
     }
 
     public async publishMessage(args:IPublishMessageArgs) {
-        const localMessage = new LocalMessage(args);
+        if (!this.localParticipant) {
+            throw new MyLocalParticipantNotExistError();
+        }
+        const localMessage = new LocalMessage({
+            message: args,
+            meLocalParticipant: this.localParticipant,
+        });
 
         this.recentMessages = [...this.recentMessages, localMessage];
 
@@ -91,15 +104,59 @@ export class Channel {
         });
     }
 
-    public loadHistoryMessages(args:ILoadMoreMessagesArgs) {
-        this.isLoadingMore = true;
+    public loadMoreMessages(args:ILoadMoreMessagesArgs) {
+        if (this.isLoadingMore) {
+            return;
+        }
+
+        this.socket?.publishMessage({
+            $case: OutBoundWsEvents.LoadMoreMessages,
+            [OutBoundWsEvents.LoadMoreMessages]: {
+                PageSize: args.pageSize,
+                FirstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
+                SkipFromFirstLoaded: args.skipFromFirstLoaded,
+            }
+        });
+
+        this.updateIsLoadingMore(true);
     }
 
+    private onLoadMoreMessagesRes(args:LoadMoreMessagesRes) {
+        if (!args.isSuccess || !this.localParticipant) {
+            throw new LoadMoreMessagesError();
+        }
+
+        const localMessages = args.messages?.map(
+            (m) => new LocalMessage({
+                message: m,
+                meLocalParticipant: this.localParticipant as LocalParticipant,
+            })
+        );
+
+        this.pushMessagesToHistoryList(localMessages);
+        this.updateIsLoadingMore(false);
+    }
+
+    private getFirstLoadedCreatedAt ():Date {
+        if (this.historyMessages?.[0]?.message?.message?.createdAt) {
+            return this.historyMessages[0].message.message.createdAt;
+        }
+        if (this.recentMessages?.[0]?.message?.message?.createdAt) {
+            return (
+                this.recentMessages[0].message.message.createdAt
+            );
+        }
+        return new Date();
+    };
+
     private pushMessageToRecentList (localMessage:LocalMessage) {
-        const sentMessageIndex =
-            this.recentMessages.findIndex(
+        let sentMessageIndex = -1;
+
+        if (localMessage.message.localMeta.isMy) {
+            sentMessageIndex = this.recentMessages.findIndex(
                 (m) => m.message.message.localId = localMessage.message.message.localId
             );
+        }
 
         if (sentMessageIndex === -1) {
             this.recentMessages = [...this.recentMessages, localMessage];
@@ -116,7 +173,7 @@ export class Channel {
     }
 
     private pushMessagesToHistoryList (localMessages:LocalMessage[]) {
-        this.historyMessages = [...this.historyMessages, ...localMessages];
+        this.historyMessages = [...localMessages, ...this.historyMessages];
         this.emit({
             event: ChannelEvents.HistoryMessagesUpdated,
             data: {
@@ -126,29 +183,64 @@ export class Channel {
     }
 
     private onNewMessage (args:MessagePB) {
-        const localMessage = new LocalMessage(args);
+        if (!this.localParticipant) {
+            throw new MyLocalParticipantNotExistError();
+        }
+        const localMessage = new LocalMessage({
+            message: args,
+            meLocalParticipant: this.localParticipant,
+        });
         this.pushMessageToRecentList(localMessage);
     }
 
     private onMeJoinedToChannel (args:MeJoinedToChannel) {
         if (!args.isSuccess) {
-            this.connectionState = ConnectionStates.ConnectionError;
-            this.emitUpdateConnectionState();
+            this.updateConnectionState(ConnectionStates.ConnectionError);
+            return;
         }
+        const createdParticipant = new LocalParticipant({
+            identifier: args.me?.identifier as string,
+            grants: args.me?.grants as ChannelParticipantGrants,
+            customData: args.me?.customData as CustomData,
+        });
+
+        this.localParticipant = createdParticipant;
+
         const localMessages =
-            args.channel?.historyMessages?.map((m) => new LocalMessage(m));
+            args.channel?.historyMessages?.map((m) => new LocalMessage({
+                message: m,
+                meLocalParticipant: createdParticipant,
+            }));
         if (localMessages) {
             this.pushMessagesToHistoryList(localMessages);
         }
-        this.connectionState = ConnectionStates.Connected;
-        this.emitUpdateConnectionState();
+        this.updateConnectionState(ConnectionStates.Connected);
     }
 
-    private emitUpdateConnectionState ()  {
+    private updateConnectionState(connectionState:ConnectionState) {
+        this.connectionState = connectionState;
+        this.emitUpdateConnectionState(connectionState);
+    }
+
+    private emitUpdateConnectionState (connectionState:ConnectionState)  {
         this.emit({
             event: ChannelEvents.ConnectionStateUpdated,
             data: {
-                connectionState: this.connectionState,
+                connectionState: connectionState,
+            }
+        });
+    }
+
+    private updateIsLoadingMore(isLoadingMore:boolean) {
+        this.isLoadingMore = isLoadingMore;
+        this.emitIsLoadingMore(isLoadingMore);
+    }
+
+    private emitIsLoadingMore(isLoadingMore:boolean) {
+        this.emit({
+            event: ChannelEvents.IsLoadingMoreUpdated,
+            data: {
+                isLoadingMore,
             }
         });
     }

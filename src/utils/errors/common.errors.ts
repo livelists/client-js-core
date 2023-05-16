@@ -1,6 +1,7 @@
+import { ChannelErrorCodes } from '../../services/channel/errors';
 import { ErrorCodes } from './websocket.errors';
 
-type ErrorType = ErrorCodes;
+type ErrorType = ErrorCodes | ChannelErrorCodes;
 
 export class CommonError extends Error {
     code: ErrorType;

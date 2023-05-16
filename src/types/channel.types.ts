@@ -1,3 +1,5 @@
+import { CustomData } from './common.types';
+
 export interface IChannelArgs {
     initialPageSize: number,
     initialOffset: number,
@@ -10,10 +12,10 @@ export interface IJoinArgs {
 
 export interface IPublishMessageArgs {
     text: string,
-    customData?: Record<string, string>,
+    customData: CustomData,
 }
 
 export interface ILoadMoreMessagesArgs {
     pageSize: number,
-    firstLoadedCreatedAt: string,
+    skipFromFirstLoaded: number,
 }

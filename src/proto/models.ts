@@ -4,8 +4,41 @@ import { Timestamp } from "./google/protobuf/timestamp";
 
 export const protobufPackage = "";
 
+export enum ParticipantStatus {
+  Active = 0,
+  Banned = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function participantStatusFromJSON(object: any): ParticipantStatus {
+  switch (object) {
+    case 0:
+    case "Active":
+      return ParticipantStatus.Active;
+    case 1:
+    case "Banned":
+      return ParticipantStatus.Banned;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return ParticipantStatus.UNRECOGNIZED;
+  }
+}
+
+export function participantStatusToJSON(object: ParticipantStatus): string {
+  switch (object) {
+    case ParticipantStatus.Active:
+      return "Active";
+    case ParticipantStatus.Banned:
+      return "Banned";
+    case ParticipantStatus.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export enum MessageType {
-  Participant = 0,
+  ParticipantCreated = 0,
   System = 1,
   UNRECOGNIZED = -1,
 }
@@ -13,8 +46,8 @@ export enum MessageType {
 export function messageTypeFromJSON(object: any): MessageType {
   switch (object) {
     case 0:
-    case "Participant":
-      return MessageType.Participant;
+    case "ParticipantCreated":
+      return MessageType.ParticipantCreated;
     case 1:
     case "System":
       return MessageType.System;
@@ -27,8 +60,8 @@ export function messageTypeFromJSON(object: any): MessageType {
 
 export function messageTypeToJSON(object: MessageType): string {
   switch (object) {
-    case MessageType.Participant:
-      return "Participant";
+    case MessageType.ParticipantCreated:
+      return "ParticipantCreated";
     case MessageType.System:
       return "System";
     case MessageType.UNRECOGNIZED:
@@ -81,13 +114,19 @@ export interface ParticipantShortInfo {
   customData?: CustomData | undefined;
 }
 
+export interface ChannelParticipantGrants {
+  sendMessage?: boolean | undefined;
+  readMessages?: boolean | undefined;
+  admin?: boolean | undefined;
+}
+
 export interface Message {
   id: string;
   sender?: ParticipantShortInfo | undefined;
   text: string;
   type: MessageType;
   subType: MessageSubType;
-  localId?: string | undefined;
+  localId: string;
   customData?: CustomData | undefined;
   createdAt?: Date;
 }
@@ -166,6 +205,77 @@ export const ParticipantShortInfo = {
   },
 };
 
+function createBaseChannelParticipantGrants(): ChannelParticipantGrants {
+  return { sendMessage: undefined, readMessages: undefined, admin: undefined };
+}
+
+export const ChannelParticipantGrants = {
+  encode(message: ChannelParticipantGrants, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.sendMessage !== undefined) {
+      writer.uint32(8).bool(message.sendMessage);
+    }
+    if (message.readMessages !== undefined) {
+      writer.uint32(16).bool(message.readMessages);
+    }
+    if (message.admin !== undefined) {
+      writer.uint32(24).bool(message.admin);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChannelParticipantGrants {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChannelParticipantGrants();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.sendMessage = reader.bool();
+          break;
+        case 2:
+          message.readMessages = reader.bool();
+          break;
+        case 3:
+          message.admin = reader.bool();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChannelParticipantGrants {
+    return {
+      sendMessage: isSet(object.sendMessage) ? Boolean(object.sendMessage) : undefined,
+      readMessages: isSet(object.readMessages) ? Boolean(object.readMessages) : undefined,
+      admin: isSet(object.admin) ? Boolean(object.admin) : undefined,
+    };
+  },
+
+  toJSON(message: ChannelParticipantGrants): unknown {
+    const obj: any = {};
+    message.sendMessage !== undefined && (obj.sendMessage = message.sendMessage);
+    message.readMessages !== undefined && (obj.readMessages = message.readMessages);
+    message.admin !== undefined && (obj.admin = message.admin);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ChannelParticipantGrants>, I>>(base?: I): ChannelParticipantGrants {
+    return ChannelParticipantGrants.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ChannelParticipantGrants>, I>>(object: I): ChannelParticipantGrants {
+    const message = createBaseChannelParticipantGrants();
+    message.sendMessage = object.sendMessage ?? undefined;
+    message.readMessages = object.readMessages ?? undefined;
+    message.admin = object.admin ?? undefined;
+    return message;
+  },
+};
+
 function createBaseMessage(): Message {
   return {
     id: "",
@@ -173,7 +283,7 @@ function createBaseMessage(): Message {
     text: "",
     type: 0,
     subType: 0,
-    localId: undefined,
+    localId: "",
     customData: undefined,
     createdAt: undefined,
   };
@@ -196,7 +306,7 @@ export const Message = {
     if (message.subType !== 0) {
       writer.uint32(40).int32(message.subType);
     }
-    if (message.localId !== undefined) {
+    if (message.localId !== "") {
       writer.uint32(50).string(message.localId);
     }
     if (message.customData !== undefined) {
@@ -254,7 +364,7 @@ export const Message = {
       text: isSet(object.text) ? String(object.text) : "",
       type: isSet(object.type) ? messageTypeFromJSON(object.type) : 0,
       subType: isSet(object.subType) ? messageSubTypeFromJSON(object.subType) : 0,
-      localId: isSet(object.localId) ? String(object.localId) : undefined,
+      localId: isSet(object.localId) ? String(object.localId) : "",
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
       createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
     };
@@ -288,7 +398,7 @@ export const Message = {
     message.text = object.text ?? "";
     message.type = object.type ?? 0;
     message.subType = object.subType ?? 0;
-    message.localId = object.localId ?? undefined;
+    message.localId = object.localId ?? "";
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;

@@ -1,9 +1,11 @@
 export enum OutBoundWsEvents {
     SendMessage = 'sendMessage',
-    JoinChannel = 'joinChannel'
+    JoinChannel = 'joinChannel',
+    LoadMoreMessages = 'loadMoreMessages',
 }
 
 export enum InBoundWsEvents {
     NewMessage = 'newMessage',
-    MeJoinedToChannel = 'meJoinedToChannel'
+    MeJoinedToChannel = 'meJoinedToChannel',
+    LoadMoreMessagesRes = 'loadMoreMessagesRes'
 }
