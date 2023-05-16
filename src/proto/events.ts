@@ -1,19 +1,23 @@
 /* eslint-disable */
 import Long from "long";
 import _m0 from "protobufjs/minimal";
-import { CustomData, Message } from "./models";
+import { Timestamp } from "./google/protobuf/timestamp";
+import { ChannelParticipantGrants, CustomData, Message } from "./models";
 
 export const protobufPackage = "";
 
 export interface OutBoundMessage {
-  message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel };
+  message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel } | {
+    $case: "loadMoreMessages";
+    loadMoreMessages: LoadMoreMessages;
+  };
 }
 
 export interface InBoundMessage {
   message?: { $case: "newMessage"; newMessage: Message } | {
     $case: "meJoinedToChannel";
     meJoinedToChannel: MeJoinedToChannel;
-  };
+  } | { $case: "loadMoreMessagesRes"; loadMoreMessagesRes: LoadMoreMessagesRes };
 }
 
 export interface SendMessage {
@@ -29,13 +33,39 @@ export interface JoinChannel {
 
 export interface ChannelInitialInfo {
   channelId: string;
+  totalMessages: number;
   historyMessages: Message[];
 }
 
+export interface MeJoined {
+  identifier: string;
+  grants?: ChannelParticipantGrants;
+  customData?: CustomData | undefined;
+}
+
 export interface MeJoinedToChannel {
-  meIdentifier: string;
+  me?: MeJoined;
   isSuccess: boolean;
   channel?: ChannelInitialInfo;
+}
+
+export interface LoadMoreMessages {
+  PageSize: number;
+  FirstLoadedCreatedAt?: Date | undefined;
+  SkipFromFirstLoaded: number;
+}
+
+export interface LoadMoreMessagesRequestInfo {
+  PageSize: number;
+  FirstLoadedCreatedAt?: Date | undefined;
+  SkipFromFirstLoaded: number;
+}
+
+export interface LoadMoreMessagesRes {
+  requestInfo?: LoadMoreMessagesRequestInfo;
+  isSuccess: boolean;
+  totalMessages: number;
+  messages: Message[];
 }
 
 function createBaseOutBoundMessage(): OutBoundMessage {
@@ -50,6 +80,9 @@ export const OutBoundMessage = {
         break;
       case "joinChannel":
         JoinChannel.encode(message.message.joinChannel, writer.uint32(18).fork()).ldelim();
+        break;
+      case "loadMoreMessages":
+        LoadMoreMessages.encode(message.message.loadMoreMessages, writer.uint32(26).fork()).ldelim();
         break;
     }
     return writer;
@@ -68,6 +101,12 @@ export const OutBoundMessage = {
         case 2:
           message.message = { $case: "joinChannel", joinChannel: JoinChannel.decode(reader, reader.uint32()) };
           break;
+        case 3:
+          message.message = {
+            $case: "loadMoreMessages",
+            loadMoreMessages: LoadMoreMessages.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -82,6 +121,8 @@ export const OutBoundMessage = {
         ? { $case: "sendMessage", sendMessage: SendMessage.fromJSON(object.sendMessage) }
         : isSet(object.joinChannel)
         ? { $case: "joinChannel", joinChannel: JoinChannel.fromJSON(object.joinChannel) }
+        : isSet(object.loadMoreMessages)
+        ? { $case: "loadMoreMessages", loadMoreMessages: LoadMoreMessages.fromJSON(object.loadMoreMessages) }
         : undefined,
     };
   },
@@ -92,6 +133,9 @@ export const OutBoundMessage = {
       (obj.sendMessage = message.message?.sendMessage ? SendMessage.toJSON(message.message?.sendMessage) : undefined);
     message.message?.$case === "joinChannel" &&
       (obj.joinChannel = message.message?.joinChannel ? JoinChannel.toJSON(message.message?.joinChannel) : undefined);
+    message.message?.$case === "loadMoreMessages" && (obj.loadMoreMessages = message.message?.loadMoreMessages
+      ? LoadMoreMessages.toJSON(message.message?.loadMoreMessages)
+      : undefined);
     return obj;
   },
 
@@ -115,6 +159,16 @@ export const OutBoundMessage = {
     ) {
       message.message = { $case: "joinChannel", joinChannel: JoinChannel.fromPartial(object.message.joinChannel) };
     }
+    if (
+      object.message?.$case === "loadMoreMessages" &&
+      object.message?.loadMoreMessages !== undefined &&
+      object.message?.loadMoreMessages !== null
+    ) {
+      message.message = {
+        $case: "loadMoreMessages",
+        loadMoreMessages: LoadMoreMessages.fromPartial(object.message.loadMoreMessages),
+      };
+    }
     return message;
   },
 };
@@ -131,6 +185,9 @@ export const InBoundMessage = {
         break;
       case "meJoinedToChannel":
         MeJoinedToChannel.encode(message.message.meJoinedToChannel, writer.uint32(18).fork()).ldelim();
+        break;
+      case "loadMoreMessagesRes":
+        LoadMoreMessagesRes.encode(message.message.loadMoreMessagesRes, writer.uint32(26).fork()).ldelim();
         break;
     }
     return writer;
@@ -152,6 +209,12 @@ export const InBoundMessage = {
             meJoinedToChannel: MeJoinedToChannel.decode(reader, reader.uint32()),
           };
           break;
+        case 3:
+          message.message = {
+            $case: "loadMoreMessagesRes",
+            loadMoreMessagesRes: LoadMoreMessagesRes.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -166,6 +229,11 @@ export const InBoundMessage = {
         ? { $case: "newMessage", newMessage: Message.fromJSON(object.newMessage) }
         : isSet(object.meJoinedToChannel)
         ? { $case: "meJoinedToChannel", meJoinedToChannel: MeJoinedToChannel.fromJSON(object.meJoinedToChannel) }
+        : isSet(object.loadMoreMessagesRes)
+        ? {
+          $case: "loadMoreMessagesRes",
+          loadMoreMessagesRes: LoadMoreMessagesRes.fromJSON(object.loadMoreMessagesRes),
+        }
         : undefined,
     };
   },
@@ -176,6 +244,9 @@ export const InBoundMessage = {
       (obj.newMessage = message.message?.newMessage ? Message.toJSON(message.message?.newMessage) : undefined);
     message.message?.$case === "meJoinedToChannel" && (obj.meJoinedToChannel = message.message?.meJoinedToChannel
       ? MeJoinedToChannel.toJSON(message.message?.meJoinedToChannel)
+      : undefined);
+    message.message?.$case === "loadMoreMessagesRes" && (obj.loadMoreMessagesRes = message.message?.loadMoreMessagesRes
+      ? LoadMoreMessagesRes.toJSON(message.message?.loadMoreMessagesRes)
       : undefined);
     return obj;
   },
@@ -201,6 +272,16 @@ export const InBoundMessage = {
       message.message = {
         $case: "meJoinedToChannel",
         meJoinedToChannel: MeJoinedToChannel.fromPartial(object.message.meJoinedToChannel),
+      };
+    }
+    if (
+      object.message?.$case === "loadMoreMessagesRes" &&
+      object.message?.loadMoreMessagesRes !== undefined &&
+      object.message?.loadMoreMessagesRes !== null
+    ) {
+      message.message = {
+        $case: "loadMoreMessagesRes",
+        loadMoreMessagesRes: LoadMoreMessagesRes.fromPartial(object.message.loadMoreMessagesRes),
       };
     }
     return message;
@@ -344,7 +425,7 @@ export const JoinChannel = {
 };
 
 function createBaseChannelInitialInfo(): ChannelInitialInfo {
-  return { channelId: "", historyMessages: [] };
+  return { channelId: "", totalMessages: 0, historyMessages: [] };
 }
 
 export const ChannelInitialInfo = {
@@ -352,8 +433,11 @@ export const ChannelInitialInfo = {
     if (message.channelId !== "") {
       writer.uint32(10).string(message.channelId);
     }
+    if (message.totalMessages !== 0) {
+      writer.uint32(16).int64(message.totalMessages);
+    }
     for (const v of message.historyMessages) {
-      Message.encode(v!, writer.uint32(18).fork()).ldelim();
+      Message.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -369,6 +453,9 @@ export const ChannelInitialInfo = {
           message.channelId = reader.string();
           break;
         case 2:
+          message.totalMessages = longToNumber(reader.int64() as Long);
+          break;
+        case 3:
           message.historyMessages.push(Message.decode(reader, reader.uint32()));
           break;
         default:
@@ -382,6 +469,7 @@ export const ChannelInitialInfo = {
   fromJSON(object: any): ChannelInitialInfo {
     return {
       channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      totalMessages: isSet(object.totalMessages) ? Number(object.totalMessages) : 0,
       historyMessages: Array.isArray(object?.historyMessages)
         ? object.historyMessages.map((e: any) => Message.fromJSON(e))
         : [],
@@ -391,6 +479,7 @@ export const ChannelInitialInfo = {
   toJSON(message: ChannelInitialInfo): unknown {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.totalMessages !== undefined && (obj.totalMessages = Math.round(message.totalMessages));
     if (message.historyMessages) {
       obj.historyMessages = message.historyMessages.map((e) => e ? Message.toJSON(e) : undefined);
     } else {
@@ -406,19 +495,97 @@ export const ChannelInitialInfo = {
   fromPartial<I extends Exact<DeepPartial<ChannelInitialInfo>, I>>(object: I): ChannelInitialInfo {
     const message = createBaseChannelInitialInfo();
     message.channelId = object.channelId ?? "";
+    message.totalMessages = object.totalMessages ?? 0;
     message.historyMessages = object.historyMessages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
 };
 
+function createBaseMeJoined(): MeJoined {
+  return { identifier: "", grants: undefined, customData: undefined };
+}
+
+export const MeJoined = {
+  encode(message: MeJoined, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    if (message.grants !== undefined) {
+      ChannelParticipantGrants.encode(message.grants, writer.uint32(18).fork()).ldelim();
+    }
+    if (message.customData !== undefined) {
+      CustomData.encode(message.customData, writer.uint32(26).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): MeJoined {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseMeJoined();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identifier = reader.string();
+          break;
+        case 2:
+          message.grants = ChannelParticipantGrants.decode(reader, reader.uint32());
+          break;
+        case 3:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): MeJoined {
+    return {
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      grants: isSet(object.grants) ? ChannelParticipantGrants.fromJSON(object.grants) : undefined,
+      customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
+    };
+  },
+
+  toJSON(message: MeJoined): unknown {
+    const obj: any = {};
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.grants !== undefined &&
+      (obj.grants = message.grants ? ChannelParticipantGrants.toJSON(message.grants) : undefined);
+    message.customData !== undefined &&
+      (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<MeJoined>, I>>(base?: I): MeJoined {
+    return MeJoined.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<MeJoined>, I>>(object: I): MeJoined {
+    const message = createBaseMeJoined();
+    message.identifier = object.identifier ?? "";
+    message.grants = (object.grants !== undefined && object.grants !== null)
+      ? ChannelParticipantGrants.fromPartial(object.grants)
+      : undefined;
+    message.customData = (object.customData !== undefined && object.customData !== null)
+      ? CustomData.fromPartial(object.customData)
+      : undefined;
+    return message;
+  },
+};
+
 function createBaseMeJoinedToChannel(): MeJoinedToChannel {
-  return { meIdentifier: "", isSuccess: false, channel: undefined };
+  return { me: undefined, isSuccess: false, channel: undefined };
 }
 
 export const MeJoinedToChannel = {
   encode(message: MeJoinedToChannel, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.meIdentifier !== "") {
-      writer.uint32(10).string(message.meIdentifier);
+    if (message.me !== undefined) {
+      MeJoined.encode(message.me, writer.uint32(10).fork()).ldelim();
     }
     if (message.isSuccess === true) {
       writer.uint32(16).bool(message.isSuccess);
@@ -437,7 +604,7 @@ export const MeJoinedToChannel = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.meIdentifier = reader.string();
+          message.me = MeJoined.decode(reader, reader.uint32());
           break;
         case 2:
           message.isSuccess = reader.bool();
@@ -455,7 +622,7 @@ export const MeJoinedToChannel = {
 
   fromJSON(object: any): MeJoinedToChannel {
     return {
-      meIdentifier: isSet(object.meIdentifier) ? String(object.meIdentifier) : "",
+      me: isSet(object.me) ? MeJoined.fromJSON(object.me) : undefined,
       isSuccess: isSet(object.isSuccess) ? Boolean(object.isSuccess) : false,
       channel: isSet(object.channel) ? ChannelInitialInfo.fromJSON(object.channel) : undefined,
     };
@@ -463,7 +630,7 @@ export const MeJoinedToChannel = {
 
   toJSON(message: MeJoinedToChannel): unknown {
     const obj: any = {};
-    message.meIdentifier !== undefined && (obj.meIdentifier = message.meIdentifier);
+    message.me !== undefined && (obj.me = message.me ? MeJoined.toJSON(message.me) : undefined);
     message.isSuccess !== undefined && (obj.isSuccess = message.isSuccess);
     message.channel !== undefined &&
       (obj.channel = message.channel ? ChannelInitialInfo.toJSON(message.channel) : undefined);
@@ -476,11 +643,246 @@ export const MeJoinedToChannel = {
 
   fromPartial<I extends Exact<DeepPartial<MeJoinedToChannel>, I>>(object: I): MeJoinedToChannel {
     const message = createBaseMeJoinedToChannel();
-    message.meIdentifier = object.meIdentifier ?? "";
+    message.me = (object.me !== undefined && object.me !== null) ? MeJoined.fromPartial(object.me) : undefined;
     message.isSuccess = object.isSuccess ?? false;
     message.channel = (object.channel !== undefined && object.channel !== null)
       ? ChannelInitialInfo.fromPartial(object.channel)
       : undefined;
+    return message;
+  },
+};
+
+function createBaseLoadMoreMessages(): LoadMoreMessages {
+  return { PageSize: 0, FirstLoadedCreatedAt: undefined, SkipFromFirstLoaded: 0 };
+}
+
+export const LoadMoreMessages = {
+  encode(message: LoadMoreMessages, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.PageSize !== 0) {
+      writer.uint32(8).int32(message.PageSize);
+    }
+    if (message.FirstLoadedCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.FirstLoadedCreatedAt), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.SkipFromFirstLoaded !== 0) {
+      writer.uint32(24).int32(message.SkipFromFirstLoaded);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadMoreMessages {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadMoreMessages();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.PageSize = reader.int32();
+          break;
+        case 2:
+          message.FirstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 3:
+          message.SkipFromFirstLoaded = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadMoreMessages {
+    return {
+      PageSize: isSet(object.PageSize) ? Number(object.PageSize) : 0,
+      FirstLoadedCreatedAt: isSet(object.FirstLoadedCreatedAt)
+        ? fromJsonTimestamp(object.FirstLoadedCreatedAt)
+        : undefined,
+      SkipFromFirstLoaded: isSet(object.SkipFromFirstLoaded) ? Number(object.SkipFromFirstLoaded) : 0,
+    };
+  },
+
+  toJSON(message: LoadMoreMessages): unknown {
+    const obj: any = {};
+    message.PageSize !== undefined && (obj.PageSize = Math.round(message.PageSize));
+    message.FirstLoadedCreatedAt !== undefined &&
+      (obj.FirstLoadedCreatedAt = message.FirstLoadedCreatedAt.toISOString());
+    message.SkipFromFirstLoaded !== undefined && (obj.SkipFromFirstLoaded = Math.round(message.SkipFromFirstLoaded));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadMoreMessages>, I>>(base?: I): LoadMoreMessages {
+    return LoadMoreMessages.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadMoreMessages>, I>>(object: I): LoadMoreMessages {
+    const message = createBaseLoadMoreMessages();
+    message.PageSize = object.PageSize ?? 0;
+    message.FirstLoadedCreatedAt = object.FirstLoadedCreatedAt ?? undefined;
+    message.SkipFromFirstLoaded = object.SkipFromFirstLoaded ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadMoreMessagesRequestInfo(): LoadMoreMessagesRequestInfo {
+  return { PageSize: 0, FirstLoadedCreatedAt: undefined, SkipFromFirstLoaded: 0 };
+}
+
+export const LoadMoreMessagesRequestInfo = {
+  encode(message: LoadMoreMessagesRequestInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.PageSize !== 0) {
+      writer.uint32(8).int32(message.PageSize);
+    }
+    if (message.FirstLoadedCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.FirstLoadedCreatedAt), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.SkipFromFirstLoaded !== 0) {
+      writer.uint32(24).int32(message.SkipFromFirstLoaded);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadMoreMessagesRequestInfo {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadMoreMessagesRequestInfo();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.PageSize = reader.int32();
+          break;
+        case 2:
+          message.FirstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 3:
+          message.SkipFromFirstLoaded = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadMoreMessagesRequestInfo {
+    return {
+      PageSize: isSet(object.PageSize) ? Number(object.PageSize) : 0,
+      FirstLoadedCreatedAt: isSet(object.FirstLoadedCreatedAt)
+        ? fromJsonTimestamp(object.FirstLoadedCreatedAt)
+        : undefined,
+      SkipFromFirstLoaded: isSet(object.SkipFromFirstLoaded) ? Number(object.SkipFromFirstLoaded) : 0,
+    };
+  },
+
+  toJSON(message: LoadMoreMessagesRequestInfo): unknown {
+    const obj: any = {};
+    message.PageSize !== undefined && (obj.PageSize = Math.round(message.PageSize));
+    message.FirstLoadedCreatedAt !== undefined &&
+      (obj.FirstLoadedCreatedAt = message.FirstLoadedCreatedAt.toISOString());
+    message.SkipFromFirstLoaded !== undefined && (obj.SkipFromFirstLoaded = Math.round(message.SkipFromFirstLoaded));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadMoreMessagesRequestInfo>, I>>(base?: I): LoadMoreMessagesRequestInfo {
+    return LoadMoreMessagesRequestInfo.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadMoreMessagesRequestInfo>, I>>(object: I): LoadMoreMessagesRequestInfo {
+    const message = createBaseLoadMoreMessagesRequestInfo();
+    message.PageSize = object.PageSize ?? 0;
+    message.FirstLoadedCreatedAt = object.FirstLoadedCreatedAt ?? undefined;
+    message.SkipFromFirstLoaded = object.SkipFromFirstLoaded ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadMoreMessagesRes(): LoadMoreMessagesRes {
+  return { requestInfo: undefined, isSuccess: false, totalMessages: 0, messages: [] };
+}
+
+export const LoadMoreMessagesRes = {
+  encode(message: LoadMoreMessagesRes, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.requestInfo !== undefined) {
+      LoadMoreMessagesRequestInfo.encode(message.requestInfo, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.isSuccess === true) {
+      writer.uint32(16).bool(message.isSuccess);
+    }
+    if (message.totalMessages !== 0) {
+      writer.uint32(24).int64(message.totalMessages);
+    }
+    for (const v of message.messages) {
+      Message.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadMoreMessagesRes {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadMoreMessagesRes();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.requestInfo = LoadMoreMessagesRequestInfo.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.isSuccess = reader.bool();
+          break;
+        case 3:
+          message.totalMessages = longToNumber(reader.int64() as Long);
+          break;
+        case 4:
+          message.messages.push(Message.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadMoreMessagesRes {
+    return {
+      requestInfo: isSet(object.requestInfo) ? LoadMoreMessagesRequestInfo.fromJSON(object.requestInfo) : undefined,
+      isSuccess: isSet(object.isSuccess) ? Boolean(object.isSuccess) : false,
+      totalMessages: isSet(object.totalMessages) ? Number(object.totalMessages) : 0,
+      messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => Message.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: LoadMoreMessagesRes): unknown {
+    const obj: any = {};
+    message.requestInfo !== undefined &&
+      (obj.requestInfo = message.requestInfo ? LoadMoreMessagesRequestInfo.toJSON(message.requestInfo) : undefined);
+    message.isSuccess !== undefined && (obj.isSuccess = message.isSuccess);
+    message.totalMessages !== undefined && (obj.totalMessages = Math.round(message.totalMessages));
+    if (message.messages) {
+      obj.messages = message.messages.map((e) => e ? Message.toJSON(e) : undefined);
+    } else {
+      obj.messages = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadMoreMessagesRes>, I>>(base?: I): LoadMoreMessagesRes {
+    return LoadMoreMessagesRes.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadMoreMessagesRes>, I>>(object: I): LoadMoreMessagesRes {
+    const message = createBaseLoadMoreMessagesRes();
+    message.requestInfo = (object.requestInfo !== undefined && object.requestInfo !== null)
+      ? LoadMoreMessagesRequestInfo.fromPartial(object.requestInfo)
+      : undefined;
+    message.isSuccess = object.isSuccess ?? false;
+    message.totalMessages = object.totalMessages ?? 0;
+    message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
 };
@@ -515,6 +917,28 @@ export type DeepPartial<T> = T extends Builtin ? T
 type KeysOfUnion<T> = T extends T ? keyof T : never;
 export type Exact<P, I extends P> = P extends Builtin ? P
   : P & { [K in keyof P]: Exact<P[K], I[K]> } & { [K in Exclude<keyof I, KeysOfUnion<P>>]: never };
+
+function toTimestamp(date: Date): Timestamp {
+  const seconds = date.getTime() / 1_000;
+  const nanos = (date.getTime() % 1_000) * 1_000_000;
+  return { seconds, nanos };
+}
+
+function fromTimestamp(t: Timestamp): Date {
+  let millis = t.seconds * 1_000;
+  millis += t.nanos / 1_000_000;
+  return new Date(millis);
+}
+
+function fromJsonTimestamp(o: any): Date {
+  if (o instanceof Date) {
+    return o;
+  } else if (typeof o === "string") {
+    return new Date(o);
+  } else {
+    return fromTimestamp(Timestamp.fromJSON(o));
+  }
+}
 
 function longToNumber(long: Long): number {
   if (long.gt(Number.MAX_SAFE_INTEGER)) {

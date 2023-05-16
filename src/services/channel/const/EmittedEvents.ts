@@ -4,7 +4,8 @@ import { ConnectionState } from './ConnectionState';
 export enum ChannelEvents {
     RecentMessagesUpdated = 'recentMessagesUpdated',
     HistoryMessagesUpdated = 'historyMessagesUpdated',
-    ConnectionStateUpdated = 'connectionStateUpdated'
+    ConnectionStateUpdated = 'connectionStateUpdated',
+    IsLoadingMoreUpdated = 'isLoadingMoreUpdated'
 }
 
 export interface IRecentMessagesUpdated {
@@ -28,7 +29,14 @@ export interface IConnectionStateUpdated {
     }
 }
 
-export type IEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated;
+export interface IIsLoadingMoreUpdated {
+    event: ChannelEvents.IsLoadingMoreUpdated,
+    data: {
+        isLoadingMore: boolean,
+    }
+}
+
+export type IEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated | IIsLoadingMoreUpdated;
 export type IOnEvent<E, D> = {
     event: E,
     cb: (data:D) => void,

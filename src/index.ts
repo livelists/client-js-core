@@ -10,6 +10,7 @@ import {
     IEmittedEvent
 } from './services/channel/const/EmittedEvents';
 import { LocalMessage } from './services/message/LocalMessage';
+import { CustomData } from './types/common.types';
 
 export {
     Channel,
@@ -23,4 +24,5 @@ export {
     IEmittedEvent,
     IOnEvent,
     ConnectionStates,
+    CustomData,
 };

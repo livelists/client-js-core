@@ -1,7 +1,12 @@
 import { InBoundWsEvents } from '../common/const/SocketEvents';
 import Config from '../config/Config';
 import { logger } from '../config/logger';
-import { InBoundMessage, MeJoinedToChannel, OutBoundMessage } from '../proto/events';
+import {
+    InBoundMessage,
+    LoadMoreMessagesRes,
+    MeJoinedToChannel,
+    OutBoundMessage,
+} from '../proto/events';
 import { Message } from '../proto/models';
 import { ConnectionError } from '../services/channel/errors';
 import { IOpenConnectionArgs } from '../types/websocket.types';
@@ -14,6 +19,9 @@ type ISubscribeArgs = {
 } | {
     event: InBoundWsEvents.NewMessage,
     cb: (args: Message) => void,
+} | {
+    event: InBoundWsEvents.LoadMoreMessagesRes,
+    cb: (args: LoadMoreMessagesRes) => void,
 }
 
 export class WSConnector {
@@ -157,6 +165,12 @@ export class WSConnector {
                 this.callListeners({
                     event: event as InBoundWsEvents,
                     data: message.message?.meJoinedToChannel,
+                });
+                break;
+            case InBoundWsEvents.LoadMoreMessagesRes:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.loadMoreMessagesRes,
                 });
                 break;
         }
