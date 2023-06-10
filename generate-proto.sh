@@ -16,4 +16,3 @@ protoc --plugin="./node_modules/ts-proto/protoc-gen-ts_proto" \
        --ts_proto_opt="${MODEL_OPTS}" \
        -I"./protocol/" \
        ./protocol/models.proto ./protocol/events.proto
-

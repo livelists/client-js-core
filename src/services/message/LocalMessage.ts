@@ -34,6 +34,7 @@ export class LocalMessage {
                 type: MessageType.ParticipantCreated,
                 sender: {
                     identifier: this._meLocalParticipant.identifier,
+                    isOnline: true,
                     customData: this._meLocalParticipant.customData ? {
                         data: this._meLocalParticipant.customData
                     } : undefined,

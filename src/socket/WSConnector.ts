@@ -6,6 +6,9 @@ import {
     LoadMoreMessagesRes,
     MeJoinedToChannel,
     OutBoundMessage,
+    LoadParticipantsRes,
+    ParticipantBecameOffline,
+    ParticipantBecameOnline,
 } from '../proto/events';
 import { Message } from '../proto/models';
 import { ConnectionError } from '../services/channel/errors';
@@ -22,7 +25,17 @@ type ISubscribeArgs = {
 } | {
     event: InBoundWsEvents.LoadMoreMessagesRes,
     cb: (args: LoadMoreMessagesRes) => void,
-}
+} | {
+    event: InBoundWsEvents.LoadParticipantsRes,
+    cb: (args: LoadParticipantsRes) => void,
+} | {
+    event: InBoundWsEvents.ParticipantBecameOffline,
+    cb: (args: ParticipantBecameOffline) => void,
+} | {
+    event: InBoundWsEvents.ParticipantBecameOnline,
+    cb: (args: ParticipantBecameOnline) => void,
+};
+
 
 export class WSConnector {
     private ws?:WebSocket;
@@ -30,6 +43,16 @@ export class WSConnector {
     private isConnected:boolean = false;
 
     private useJSON: boolean = false;
+
+    private static pingTimeOut: number = 1000;
+
+    private pingInterval:any;
+
+    private pingTimeout:any;
+
+    private pingIntervalDuration: number = 5000;
+
+    private pingTimeoutDuration: number = 2000;
 
     private subscriptions: Record<string, ISubscribeArgs['cb'][]> = {};
 
@@ -173,8 +196,87 @@ export class WSConnector {
                     data: message.message?.loadMoreMessagesRes,
                 });
                 break;
+            case InBoundWsEvents.LoadParticipantsRes:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.loadParticipantsRes,
+                });
+                break;
+            case InBoundWsEvents.ParticipantBecameOnline:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.participantBecameOnline,
+                });
+                break;
+            case InBoundWsEvents.ParticipantBecameOffline:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.participantBecameOffline,
+                });
+                break;
         }
     };
+
+    sendPing() {
+        /** send both of ping and pingReq for compatibility to old and new server */
+        /*return Promise.all([
+            this.sendRequest({
+                $case: 'ping',
+                ping: Date.now(),
+            }),
+            this.sendRequest({
+                $case: 'pingReq',
+                pingReq: {
+                    timestamp: Date.now(),
+                    rtt: this.rtt,
+                },
+            }),
+        ]);*/
+    }
+
+    private resetPingTimeout() {
+        this.clearPingTimeout();
+        if (!this.pingTimeoutDuration) {
+            console.log('ping timeout duration not set');
+            return;
+        }
+        this.pingTimeout = setTimeout(() => {
+            console.log(
+                `ping timeout triggered. last pong received at: ${new Date(
+                    Date.now() - this.pingTimeoutDuration! * 1000,
+                ).toUTCString()}`,
+            );
+        }, this.pingTimeoutDuration * 1000);
+    }
+
+    /**
+     * Clears ping timeout (does not start a new timeout)
+     */
+    private clearPingTimeout() {
+        if (this.pingTimeout) {
+            clearTimeout(this.pingTimeout);
+        }
+    }
+
+    private startPingInterval() {
+        this.clearPingInterval();
+        this.resetPingTimeout();
+        if (!this.pingIntervalDuration) {
+            console.log('ping interval duration not set');
+            return;
+        }
+        console.log('start ping interval');
+        this.pingInterval = setInterval(() => {
+            this.sendPing();
+        }, this.pingIntervalDuration * 1000);
+    }
+
+    private clearPingInterval() {
+        this.clearPingTimeout();
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+        }
+    }
 
     private callListeners = ({ event, data }:{ event: InBoundWsEvents, data: any }) => {
         this.subscriptions[event]?.map((cb) => cb(data));

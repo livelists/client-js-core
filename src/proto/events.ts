@@ -2,7 +2,7 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
-import { ChannelParticipantGrants, CustomData, Message } from "./models";
+import { ChannelParticipantGrants, CustomData, Message, ParticipantShortInfo } from "./models";
 
 export const protobufPackage = "";
 
@@ -10,14 +10,17 @@ export interface OutBoundMessage {
   message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel } | {
     $case: "loadMoreMessages";
     loadMoreMessages: LoadMoreMessages;
-  };
+  } | { $case: "loadParticipantsReq"; loadParticipantsReq: LoadParticipantsReq };
 }
 
 export interface InBoundMessage {
-  message?: { $case: "newMessage"; newMessage: Message } | {
-    $case: "meJoinedToChannel";
-    meJoinedToChannel: MeJoinedToChannel;
-  } | { $case: "loadMoreMessagesRes"; loadMoreMessagesRes: LoadMoreMessagesRes };
+  message?:
+    | { $case: "newMessage"; newMessage: Message }
+    | { $case: "meJoinedToChannel"; meJoinedToChannel: MeJoinedToChannel }
+    | { $case: "loadMoreMessagesRes"; loadMoreMessagesRes: LoadMoreMessagesRes }
+    | { $case: "participantBecameOnline"; participantBecameOnline: ParticipantBecameOnline }
+    | { $case: "participantBecameOffline"; participantBecameOffline: ParticipantBecameOffline }
+    | { $case: "loadParticipantsRes"; loadParticipantsRes: LoadParticipantsRes };
 }
 
 export interface SendMessage {
@@ -68,6 +71,24 @@ export interface LoadMoreMessagesRes {
   messages: Message[];
 }
 
+export interface ParticipantBecameOnline {
+  identifier: string;
+}
+
+export interface ParticipantBecameOffline {
+  identifier: string;
+  lastSeenAt?: Date;
+}
+
+export interface LoadParticipantsReq {
+  pageSize: number;
+}
+
+export interface LoadParticipantsRes {
+  participants: ParticipantShortInfo[];
+  pageSize: number;
+}
+
 function createBaseOutBoundMessage(): OutBoundMessage {
   return { message: undefined };
 }
@@ -83,6 +104,9 @@ export const OutBoundMessage = {
         break;
       case "loadMoreMessages":
         LoadMoreMessages.encode(message.message.loadMoreMessages, writer.uint32(26).fork()).ldelim();
+        break;
+      case "loadParticipantsReq":
+        LoadParticipantsReq.encode(message.message.loadParticipantsReq, writer.uint32(34).fork()).ldelim();
         break;
     }
     return writer;
@@ -107,6 +131,12 @@ export const OutBoundMessage = {
             loadMoreMessages: LoadMoreMessages.decode(reader, reader.uint32()),
           };
           break;
+        case 4:
+          message.message = {
+            $case: "loadParticipantsReq",
+            loadParticipantsReq: LoadParticipantsReq.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -123,6 +153,11 @@ export const OutBoundMessage = {
         ? { $case: "joinChannel", joinChannel: JoinChannel.fromJSON(object.joinChannel) }
         : isSet(object.loadMoreMessages)
         ? { $case: "loadMoreMessages", loadMoreMessages: LoadMoreMessages.fromJSON(object.loadMoreMessages) }
+        : isSet(object.loadParticipantsReq)
+        ? {
+          $case: "loadParticipantsReq",
+          loadParticipantsReq: LoadParticipantsReq.fromJSON(object.loadParticipantsReq),
+        }
         : undefined,
     };
   },
@@ -135,6 +170,9 @@ export const OutBoundMessage = {
       (obj.joinChannel = message.message?.joinChannel ? JoinChannel.toJSON(message.message?.joinChannel) : undefined);
     message.message?.$case === "loadMoreMessages" && (obj.loadMoreMessages = message.message?.loadMoreMessages
       ? LoadMoreMessages.toJSON(message.message?.loadMoreMessages)
+      : undefined);
+    message.message?.$case === "loadParticipantsReq" && (obj.loadParticipantsReq = message.message?.loadParticipantsReq
+      ? LoadParticipantsReq.toJSON(message.message?.loadParticipantsReq)
       : undefined);
     return obj;
   },
@@ -169,6 +207,16 @@ export const OutBoundMessage = {
         loadMoreMessages: LoadMoreMessages.fromPartial(object.message.loadMoreMessages),
       };
     }
+    if (
+      object.message?.$case === "loadParticipantsReq" &&
+      object.message?.loadParticipantsReq !== undefined &&
+      object.message?.loadParticipantsReq !== null
+    ) {
+      message.message = {
+        $case: "loadParticipantsReq",
+        loadParticipantsReq: LoadParticipantsReq.fromPartial(object.message.loadParticipantsReq),
+      };
+    }
     return message;
   },
 };
@@ -188,6 +236,15 @@ export const InBoundMessage = {
         break;
       case "loadMoreMessagesRes":
         LoadMoreMessagesRes.encode(message.message.loadMoreMessagesRes, writer.uint32(26).fork()).ldelim();
+        break;
+      case "participantBecameOnline":
+        ParticipantBecameOnline.encode(message.message.participantBecameOnline, writer.uint32(34).fork()).ldelim();
+        break;
+      case "participantBecameOffline":
+        ParticipantBecameOffline.encode(message.message.participantBecameOffline, writer.uint32(42).fork()).ldelim();
+        break;
+      case "loadParticipantsRes":
+        LoadParticipantsRes.encode(message.message.loadParticipantsRes, writer.uint32(50).fork()).ldelim();
         break;
     }
     return writer;
@@ -215,6 +272,24 @@ export const InBoundMessage = {
             loadMoreMessagesRes: LoadMoreMessagesRes.decode(reader, reader.uint32()),
           };
           break;
+        case 4:
+          message.message = {
+            $case: "participantBecameOnline",
+            participantBecameOnline: ParticipantBecameOnline.decode(reader, reader.uint32()),
+          };
+          break;
+        case 5:
+          message.message = {
+            $case: "participantBecameOffline",
+            participantBecameOffline: ParticipantBecameOffline.decode(reader, reader.uint32()),
+          };
+          break;
+        case 6:
+          message.message = {
+            $case: "loadParticipantsRes",
+            loadParticipantsRes: LoadParticipantsRes.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -234,6 +309,21 @@ export const InBoundMessage = {
           $case: "loadMoreMessagesRes",
           loadMoreMessagesRes: LoadMoreMessagesRes.fromJSON(object.loadMoreMessagesRes),
         }
+        : isSet(object.participantBecameOnline)
+        ? {
+          $case: "participantBecameOnline",
+          participantBecameOnline: ParticipantBecameOnline.fromJSON(object.participantBecameOnline),
+        }
+        : isSet(object.participantBecameOffline)
+        ? {
+          $case: "participantBecameOffline",
+          participantBecameOffline: ParticipantBecameOffline.fromJSON(object.participantBecameOffline),
+        }
+        : isSet(object.loadParticipantsRes)
+        ? {
+          $case: "loadParticipantsRes",
+          loadParticipantsRes: LoadParticipantsRes.fromJSON(object.loadParticipantsRes),
+        }
         : undefined,
     };
   },
@@ -247,6 +337,17 @@ export const InBoundMessage = {
       : undefined);
     message.message?.$case === "loadMoreMessagesRes" && (obj.loadMoreMessagesRes = message.message?.loadMoreMessagesRes
       ? LoadMoreMessagesRes.toJSON(message.message?.loadMoreMessagesRes)
+      : undefined);
+    message.message?.$case === "participantBecameOnline" &&
+      (obj.participantBecameOnline = message.message?.participantBecameOnline
+        ? ParticipantBecameOnline.toJSON(message.message?.participantBecameOnline)
+        : undefined);
+    message.message?.$case === "participantBecameOffline" &&
+      (obj.participantBecameOffline = message.message?.participantBecameOffline
+        ? ParticipantBecameOffline.toJSON(message.message?.participantBecameOffline)
+        : undefined);
+    message.message?.$case === "loadParticipantsRes" && (obj.loadParticipantsRes = message.message?.loadParticipantsRes
+      ? LoadParticipantsRes.toJSON(message.message?.loadParticipantsRes)
       : undefined);
     return obj;
   },
@@ -282,6 +383,36 @@ export const InBoundMessage = {
       message.message = {
         $case: "loadMoreMessagesRes",
         loadMoreMessagesRes: LoadMoreMessagesRes.fromPartial(object.message.loadMoreMessagesRes),
+      };
+    }
+    if (
+      object.message?.$case === "participantBecameOnline" &&
+      object.message?.participantBecameOnline !== undefined &&
+      object.message?.participantBecameOnline !== null
+    ) {
+      message.message = {
+        $case: "participantBecameOnline",
+        participantBecameOnline: ParticipantBecameOnline.fromPartial(object.message.participantBecameOnline),
+      };
+    }
+    if (
+      object.message?.$case === "participantBecameOffline" &&
+      object.message?.participantBecameOffline !== undefined &&
+      object.message?.participantBecameOffline !== null
+    ) {
+      message.message = {
+        $case: "participantBecameOffline",
+        participantBecameOffline: ParticipantBecameOffline.fromPartial(object.message.participantBecameOffline),
+      };
+    }
+    if (
+      object.message?.$case === "loadParticipantsRes" &&
+      object.message?.loadParticipantsRes !== undefined &&
+      object.message?.loadParticipantsRes !== null
+    ) {
+      message.message = {
+        $case: "loadParticipantsRes",
+        loadParticipantsRes: LoadParticipantsRes.fromPartial(object.message.loadParticipantsRes),
       };
     }
     return message;
@@ -883,6 +1014,238 @@ export const LoadMoreMessagesRes = {
     message.isSuccess = object.isSuccess ?? false;
     message.totalMessages = object.totalMessages ?? 0;
     message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseParticipantBecameOnline(): ParticipantBecameOnline {
+  return { identifier: "" };
+}
+
+export const ParticipantBecameOnline = {
+  encode(message: ParticipantBecameOnline, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParticipantBecameOnline {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParticipantBecameOnline();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identifier = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParticipantBecameOnline {
+    return { identifier: isSet(object.identifier) ? String(object.identifier) : "" };
+  },
+
+  toJSON(message: ParticipantBecameOnline): unknown {
+    const obj: any = {};
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ParticipantBecameOnline>, I>>(base?: I): ParticipantBecameOnline {
+    return ParticipantBecameOnline.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ParticipantBecameOnline>, I>>(object: I): ParticipantBecameOnline {
+    const message = createBaseParticipantBecameOnline();
+    message.identifier = object.identifier ?? "";
+    return message;
+  },
+};
+
+function createBaseParticipantBecameOffline(): ParticipantBecameOffline {
+  return { identifier: "", lastSeenAt: undefined };
+}
+
+export const ParticipantBecameOffline = {
+  encode(message: ParticipantBecameOffline, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.identifier !== "") {
+      writer.uint32(10).string(message.identifier);
+    }
+    if (message.lastSeenAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ParticipantBecameOffline {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseParticipantBecameOffline();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.identifier = reader.string();
+          break;
+        case 2:
+          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ParticipantBecameOffline {
+    return {
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+    };
+  },
+
+  toJSON(message: ParticipantBecameOffline): unknown {
+    const obj: any = {};
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ParticipantBecameOffline>, I>>(base?: I): ParticipantBecameOffline {
+    return ParticipantBecameOffline.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ParticipantBecameOffline>, I>>(object: I): ParticipantBecameOffline {
+    const message = createBaseParticipantBecameOffline();
+    message.identifier = object.identifier ?? "";
+    message.lastSeenAt = object.lastSeenAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseLoadParticipantsReq(): LoadParticipantsReq {
+  return { pageSize: 0 };
+}
+
+export const LoadParticipantsReq = {
+  encode(message: LoadParticipantsReq, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadParticipantsReq {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadParticipantsReq();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.pageSize = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadParticipantsReq {
+    return { pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0 };
+  },
+
+  toJSON(message: LoadParticipantsReq): unknown {
+    const obj: any = {};
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadParticipantsReq>, I>>(base?: I): LoadParticipantsReq {
+    return LoadParticipantsReq.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadParticipantsReq>, I>>(object: I): LoadParticipantsReq {
+    const message = createBaseLoadParticipantsReq();
+    message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadParticipantsRes(): LoadParticipantsRes {
+  return { participants: [], pageSize: 0 };
+}
+
+export const LoadParticipantsRes = {
+  encode(message: LoadParticipantsRes, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.participants) {
+      ParticipantShortInfo.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadParticipantsRes {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadParticipantsRes();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.participants.push(ParticipantShortInfo.decode(reader, reader.uint32()));
+          break;
+        case 2:
+          message.pageSize = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadParticipantsRes {
+    return {
+      participants: Array.isArray(object?.participants)
+        ? object.participants.map((e: any) => ParticipantShortInfo.fromJSON(e))
+        : [],
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+    };
+  },
+
+  toJSON(message: LoadParticipantsRes): unknown {
+    const obj: any = {};
+    if (message.participants) {
+      obj.participants = message.participants.map((e) => e ? ParticipantShortInfo.toJSON(e) : undefined);
+    } else {
+      obj.participants = [];
+    }
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadParticipantsRes>, I>>(base?: I): LoadParticipantsRes {
+    return LoadParticipantsRes.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadParticipantsRes>, I>>(object: I): LoadParticipantsRes {
+    const message = createBaseLoadParticipantsRes();
+    message.participants = object.participants?.map((e) => ParticipantShortInfo.fromPartial(e)) || [];
+    message.pageSize = object.pageSize ?? 0;
     return message;
   },
 };

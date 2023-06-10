@@ -36,7 +36,7 @@ export interface IIsLoadingMoreUpdated {
     }
 }
 
-export type IEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated | IIsLoadingMoreUpdated;
+export type IChannelEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated | IIsLoadingMoreUpdated;
 export type IOnEvent<E, D> = {
     event: E,
     cb: (data:D) => void,

@@ -2,4 +2,4 @@
 
 npm run webpack
 
-cp -R "./dist" '/home/nikrainev/Desktop/livelists/react-sdk/node_modules/livelists-js-core/dist'
+cp -R './dist' '/Users/nikitakrainev/Desktop/LiveLists/Client/react-sdk/node_modules/livelists-js-core'
