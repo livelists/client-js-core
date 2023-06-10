@@ -9,9 +9,10 @@ import { WSConnector } from '../../socket/WSConnector';
 import { IChannelArgs, IJoinArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
 import { CustomData } from '../../types/common.types';
 import { LocalMessage } from '../message/LocalMessage';
+import { ChannelParticipants } from '../participant/ChannelParticipants';
 import { LocalParticipant } from '../participant/LocalParticipant';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
-import { ChannelEvents, IEmittedEvent, IOnEvent } from './const/EmittedEvents';
+import { ChannelEvents, IChannelEmittedEvent, IOnEvent } from './const/EmittedEvents';
 import { LoadMoreMessagesError, MyLocalParticipantNotExistError } from './errors';
 
 export class Channel {
@@ -34,7 +35,7 @@ export class Channel {
 
     private localParticipant:LocalParticipant|undefined;
 
-    private emit (event:IEmittedEvent) {
+    private emit (event:IChannelEmittedEvent) {
         this.emitter?.emit(event.event, event.data);
     }
 
@@ -47,12 +48,18 @@ export class Channel {
     private historyMessages:LocalMessage[] = [];
 
     private isLoadingMore = false;
+    
+    public channelParticipants:ChannelParticipants| undefined;
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
         Config.setAccessToken(args.accessToken);
 
         this.socket = new WSConnector();
+        this.channelParticipants = new ChannelParticipants({
+            socket: this.socket,
+            emitter: this.emitter,
+        });
 
         this.updateConnectionState(ConnectionStates.Connecting);
 
@@ -245,7 +252,7 @@ export class Channel {
         });
     }
 
-    public on({ event, cb }:IOnEvent<IEmittedEvent['event'], any>) {
+    public on({ event, cb }:IOnEvent<IChannelEmittedEvent['event'], any>) {
         this.emitter?.on(event, cb);
     }
 }

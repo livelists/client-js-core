@@ -111,6 +111,8 @@ export function messageSubTypeToJSON(object: MessageSubType): string {
 
 export interface ParticipantShortInfo {
   identifier: string;
+  lastSeenAt?: Date;
+  isOnline: boolean;
   customData?: CustomData | undefined;
 }
 
@@ -141,7 +143,7 @@ export interface CustomData_DataEntry {
 }
 
 function createBaseParticipantShortInfo(): ParticipantShortInfo {
-  return { identifier: "", customData: undefined };
+  return { identifier: "", lastSeenAt: undefined, isOnline: false, customData: undefined };
 }
 
 export const ParticipantShortInfo = {
@@ -149,8 +151,14 @@ export const ParticipantShortInfo = {
     if (message.identifier !== "") {
       writer.uint32(10).string(message.identifier);
     }
+    if (message.lastSeenAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    }
+    if (message.isOnline === true) {
+      writer.uint32(24).bool(message.isOnline);
+    }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(18).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -166,6 +174,12 @@ export const ParticipantShortInfo = {
           message.identifier = reader.string();
           break;
         case 2:
+          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 3:
+          message.isOnline = reader.bool();
+          break;
+        case 4:
           message.customData = CustomData.decode(reader, reader.uint32());
           break;
         default:
@@ -179,6 +193,8 @@ export const ParticipantShortInfo = {
   fromJSON(object: any): ParticipantShortInfo {
     return {
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+      isOnline: isSet(object.isOnline) ? Boolean(object.isOnline) : false,
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
     };
   },
@@ -186,6 +202,8 @@ export const ParticipantShortInfo = {
   toJSON(message: ParticipantShortInfo): unknown {
     const obj: any = {};
     message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    message.isOnline !== undefined && (obj.isOnline = message.isOnline);
     message.customData !== undefined &&
       (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     return obj;
@@ -198,6 +216,8 @@ export const ParticipantShortInfo = {
   fromPartial<I extends Exact<DeepPartial<ParticipantShortInfo>, I>>(object: I): ParticipantShortInfo {
     const message = createBaseParticipantShortInfo();
     message.identifier = object.identifier ?? "";
+    message.lastSeenAt = object.lastSeenAt ?? undefined;
+    message.isOnline = object.isOnline ?? false;
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;
