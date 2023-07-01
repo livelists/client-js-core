@@ -11,6 +11,7 @@ message OutBoundMessage {
     JoinChannel joinChannel = 2;
     LoadMoreMessages loadMoreMessages = 3;
     LoadParticipantsReq loadParticipantsReq = 4;
+    CustomEvent sendCustomEvent = 5;
   }
 }
 
@@ -23,6 +24,7 @@ message InBoundMessage {
     ParticipantBecameOnline participantBecameOnline = 4;
     ParticipantBecameOffline participantBecameOffline = 5;
     LoadParticipantsRes loadParticipantsRes = 6;
+    CustomEvent newCustomEvent = 7;
   }
 }
 

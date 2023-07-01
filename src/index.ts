@@ -1,4 +1,9 @@
-import { Message, ParticipantShortInfo } from './proto/models';
+import {
+    Message,
+    ParticipantShortInfo,
+    WSRoomTypes,
+    CustomEvent,
+} from './proto/models';
 import { Channel } from './services/channel/Channel';
 import { ConnectionState, ConnectionStates } from './services/channel/const/ConnectionState';
 import {
@@ -10,6 +15,14 @@ import {
     IChannelEmittedEvent,
     IIsLoadingMoreUpdated
 } from './services/channel/const/EmittedEvents';
+import {
+    CustomEventsEmitEvents,
+    INewCustomEvents,
+    ICustomEventsEmittedEvent,
+} from './services/customEvents/const/EmittedEvents';
+import {
+    CustomEvents,
+} from './services/customEvents/CustomEvents';
 import { LocalMessage } from './services/message/LocalMessage';
 import { ChannelParticipants } from './services/participant/ChannelParticipants';
 import {
@@ -48,4 +61,10 @@ export {
     IOnEvent,
     ConnectionStates,
     CustomData,
+    CustomEventsEmitEvents,
+    INewCustomEvents,
+    ICustomEventsEmittedEvent,
+    CustomEvents,
+    WSRoomTypes,
+    CustomEvent,
 };

@@ -10,7 +10,7 @@ import {
     ParticipantBecameOffline,
     ParticipantBecameOnline,
 } from '../proto/events';
-import { Message } from '../proto/models';
+import { Message, CustomEvent } from '../proto/models';
 import { ConnectionError } from '../services/channel/errors';
 import { IOpenConnectionArgs } from '../types/websocket.types';
 
@@ -34,6 +34,9 @@ type ISubscribeArgs = {
 } | {
     event: InBoundWsEvents.ParticipantBecameOnline,
     cb: (args: ParticipantBecameOnline) => void,
+} | {
+    event: InBoundWsEvents.NewCustomEvent,
+    cb: (args: CustomEvent) => void,
 };
 
 
@@ -212,6 +215,12 @@ export class WSConnector {
                 this.callListeners({
                     event: event as InBoundWsEvents,
                     data: message.message?.participantBecameOffline,
+                });
+                break;
+            case InBoundWsEvents.NewCustomEvent:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.newCustomEvent,
                 });
                 break;
         }
