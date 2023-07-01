@@ -109,6 +109,39 @@ export function messageSubTypeToJSON(object: MessageSubType): string {
   }
 }
 
+export enum WSRoomTypes {
+  Channel = 0,
+  Participant = 1,
+  UNRECOGNIZED = -1,
+}
+
+export function wSRoomTypesFromJSON(object: any): WSRoomTypes {
+  switch (object) {
+    case 0:
+    case "Channel":
+      return WSRoomTypes.Channel;
+    case 1:
+    case "Participant":
+      return WSRoomTypes.Participant;
+    case -1:
+    case "UNRECOGNIZED":
+    default:
+      return WSRoomTypes.UNRECOGNIZED;
+  }
+}
+
+export function wSRoomTypesToJSON(object: WSRoomTypes): string {
+  switch (object) {
+    case WSRoomTypes.Channel:
+      return "Channel";
+    case WSRoomTypes.Participant:
+      return "Participant";
+    case WSRoomTypes.UNRECOGNIZED:
+    default:
+      return "UNRECOGNIZED";
+  }
+}
+
 export interface ParticipantShortInfo {
   identifier: string;
   lastSeenAt?: Date;
@@ -131,6 +164,13 @@ export interface Message {
   localId: string;
   customData?: CustomData | undefined;
   createdAt?: Date;
+}
+
+export interface CustomEvent {
+  roomType: WSRoomTypes;
+  roomIdentifier: string;
+  eventName: string;
+  customData?: CustomData | undefined;
 }
 
 export interface CustomData {
@@ -423,6 +463,89 @@ export const Message = {
       ? CustomData.fromPartial(object.customData)
       : undefined;
     message.createdAt = object.createdAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseCustomEvent(): CustomEvent {
+  return { roomType: 0, roomIdentifier: "", eventName: "", customData: undefined };
+}
+
+export const CustomEvent = {
+  encode(message: CustomEvent, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.roomType !== 0) {
+      writer.uint32(8).int32(message.roomType);
+    }
+    if (message.roomIdentifier !== "") {
+      writer.uint32(18).string(message.roomIdentifier);
+    }
+    if (message.eventName !== "") {
+      writer.uint32(26).string(message.eventName);
+    }
+    if (message.customData !== undefined) {
+      CustomData.encode(message.customData, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): CustomEvent {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseCustomEvent();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.roomType = reader.int32() as any;
+          break;
+        case 2:
+          message.roomIdentifier = reader.string();
+          break;
+        case 3:
+          message.eventName = reader.string();
+          break;
+        case 4:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): CustomEvent {
+    return {
+      roomType: isSet(object.roomType) ? wSRoomTypesFromJSON(object.roomType) : 0,
+      roomIdentifier: isSet(object.roomIdentifier) ? String(object.roomIdentifier) : "",
+      eventName: isSet(object.eventName) ? String(object.eventName) : "",
+      customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
+    };
+  },
+
+  toJSON(message: CustomEvent): unknown {
+    const obj: any = {};
+    message.roomType !== undefined && (obj.roomType = wSRoomTypesToJSON(message.roomType));
+    message.roomIdentifier !== undefined && (obj.roomIdentifier = message.roomIdentifier);
+    message.eventName !== undefined && (obj.eventName = message.eventName);
+    message.customData !== undefined &&
+      (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<CustomEvent>, I>>(base?: I): CustomEvent {
+    return CustomEvent.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<CustomEvent>, I>>(object: I): CustomEvent {
+    const message = createBaseCustomEvent();
+    message.roomType = object.roomType ?? 0;
+    message.roomIdentifier = object.roomIdentifier ?? "";
+    message.eventName = object.eventName ?? "";
+    message.customData = (object.customData !== undefined && object.customData !== null)
+      ? CustomData.fromPartial(object.customData)
+      : undefined;
     return message;
   },
 };

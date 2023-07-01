@@ -1,5 +1,5 @@
 import { SendMessage } from '../../proto/events';
-import { Message as MessagePB, MessageSubType, MessageType } from '../../proto/models';
+import { Message as MessagePB, MessageSubType, MessageType, CustomData } from '../../proto/models';
 import { IPublishMessageArgs } from '../../types/channel.types';
 import { ILocalMessage, ILocalMessageArgs } from '../../types/message.types';
 import { generateRandomString } from '../../utils/string/generateRandomString';
@@ -35,9 +35,8 @@ export class LocalMessage {
                 sender: {
                     identifier: this._meLocalParticipant.identifier,
                     isOnline: true,
-                    customData: this._meLocalParticipant.customData ? {
-                        data: this._meLocalParticipant.customData
-                    } : undefined,
+                    customData: this._meLocalParticipant.customData?.data
+                        ? this._meLocalParticipant.customData as any as CustomData : undefined,
                 },
                 subType: MessageSubType.TextMessage,
                 localId: localId,

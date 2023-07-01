@@ -11,7 +11,6 @@ export class ChannelParticipants {
     constructor({ socket, emitter }:IChannelParticipantsArgs) {
         this.socket = socket;
         this.emitter = emitter;
-        console.log('given socket', socket);
 
         this.socket.subscribe({
             event: InBoundWsEvents.LoadParticipantsRes,
@@ -45,7 +44,6 @@ export class ChannelParticipants {
     }
 
     private onLoadParticipantsRes(data:LoadParticipantsRes) {
-        console.log(data, 'loaded participants');
         this.updateIsParticipantsUploaded();
         this.participantsList = data.participants;
         this.emitParticipantsListUpdated();
@@ -75,11 +73,33 @@ export class ChannelParticipants {
     }
 
     private onParticipantBecameOnline(data:ParticipantBecameOnline) {
-        console.log('became online', data);
+        const becameOnlineIndex = this.participantsList.findIndex(
+            (p) => p.identifier == data.identifier);
+
+        if (becameOnlineIndex != -1) {
+            const participantsListCopy = [...this.participantsList];
+            const participantCopy = { ...participantsListCopy[becameOnlineIndex] };
+            participantCopy.isOnline = true;
+            participantsListCopy[becameOnlineIndex] = participantCopy;
+            this.participantsList[becameOnlineIndex] = participantCopy;
+            this.emitParticipantsListUpdated();
+        }
     }
 
     private onParticipantBecameOffline(data:ParticipantBecameOffline) {
-        console.log('became offline', data);
+        const becameOfflineIndex = this.participantsList.findIndex(
+            (p) => p.identifier == data.identifier);
+
+        if (becameOfflineIndex != -1) {
+            const participantsListCopy = [...this.participantsList];
+            const participantCopy = { ...participantsListCopy[becameOfflineIndex] };
+            participantCopy.isOnline = false;
+            participantCopy.lastSeenAt = data.lastSeenAt;
+            participantsListCopy[becameOfflineIndex] = participantCopy;
+            this.participantsList[becameOfflineIndex] = participantCopy;
+
+            this.emitParticipantsListUpdated();
+        }
     }
 
     private emit (event:IChannelParticipantsEmittedEvent) {

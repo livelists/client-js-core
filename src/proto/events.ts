@@ -2,15 +2,17 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
-import { ChannelParticipantGrants, CustomData, Message, ParticipantShortInfo } from "./models";
+import { ChannelParticipantGrants, CustomData, CustomEvent, Message, ParticipantShortInfo } from "./models";
 
 export const protobufPackage = "";
 
 export interface OutBoundMessage {
-  message?: { $case: "sendMessage"; sendMessage: SendMessage } | { $case: "joinChannel"; joinChannel: JoinChannel } | {
-    $case: "loadMoreMessages";
-    loadMoreMessages: LoadMoreMessages;
-  } | { $case: "loadParticipantsReq"; loadParticipantsReq: LoadParticipantsReq };
+  message?:
+    | { $case: "sendMessage"; sendMessage: SendMessage }
+    | { $case: "joinChannel"; joinChannel: JoinChannel }
+    | { $case: "loadMoreMessages"; loadMoreMessages: LoadMoreMessages }
+    | { $case: "loadParticipantsReq"; loadParticipantsReq: LoadParticipantsReq }
+    | { $case: "sendCustomEvent"; sendCustomEvent: CustomEvent };
 }
 
 export interface InBoundMessage {
@@ -20,7 +22,8 @@ export interface InBoundMessage {
     | { $case: "loadMoreMessagesRes"; loadMoreMessagesRes: LoadMoreMessagesRes }
     | { $case: "participantBecameOnline"; participantBecameOnline: ParticipantBecameOnline }
     | { $case: "participantBecameOffline"; participantBecameOffline: ParticipantBecameOffline }
-    | { $case: "loadParticipantsRes"; loadParticipantsRes: LoadParticipantsRes };
+    | { $case: "loadParticipantsRes"; loadParticipantsRes: LoadParticipantsRes }
+    | { $case: "newCustomEvent"; newCustomEvent: CustomEvent };
 }
 
 export interface SendMessage {
@@ -108,6 +111,9 @@ export const OutBoundMessage = {
       case "loadParticipantsReq":
         LoadParticipantsReq.encode(message.message.loadParticipantsReq, writer.uint32(34).fork()).ldelim();
         break;
+      case "sendCustomEvent":
+        CustomEvent.encode(message.message.sendCustomEvent, writer.uint32(42).fork()).ldelim();
+        break;
     }
     return writer;
   },
@@ -137,6 +143,9 @@ export const OutBoundMessage = {
             loadParticipantsReq: LoadParticipantsReq.decode(reader, reader.uint32()),
           };
           break;
+        case 5:
+          message.message = { $case: "sendCustomEvent", sendCustomEvent: CustomEvent.decode(reader, reader.uint32()) };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -158,6 +167,8 @@ export const OutBoundMessage = {
           $case: "loadParticipantsReq",
           loadParticipantsReq: LoadParticipantsReq.fromJSON(object.loadParticipantsReq),
         }
+        : isSet(object.sendCustomEvent)
+        ? { $case: "sendCustomEvent", sendCustomEvent: CustomEvent.fromJSON(object.sendCustomEvent) }
         : undefined,
     };
   },
@@ -173,6 +184,9 @@ export const OutBoundMessage = {
       : undefined);
     message.message?.$case === "loadParticipantsReq" && (obj.loadParticipantsReq = message.message?.loadParticipantsReq
       ? LoadParticipantsReq.toJSON(message.message?.loadParticipantsReq)
+      : undefined);
+    message.message?.$case === "sendCustomEvent" && (obj.sendCustomEvent = message.message?.sendCustomEvent
+      ? CustomEvent.toJSON(message.message?.sendCustomEvent)
       : undefined);
     return obj;
   },
@@ -217,6 +231,16 @@ export const OutBoundMessage = {
         loadParticipantsReq: LoadParticipantsReq.fromPartial(object.message.loadParticipantsReq),
       };
     }
+    if (
+      object.message?.$case === "sendCustomEvent" &&
+      object.message?.sendCustomEvent !== undefined &&
+      object.message?.sendCustomEvent !== null
+    ) {
+      message.message = {
+        $case: "sendCustomEvent",
+        sendCustomEvent: CustomEvent.fromPartial(object.message.sendCustomEvent),
+      };
+    }
     return message;
   },
 };
@@ -245,6 +269,9 @@ export const InBoundMessage = {
         break;
       case "loadParticipantsRes":
         LoadParticipantsRes.encode(message.message.loadParticipantsRes, writer.uint32(50).fork()).ldelim();
+        break;
+      case "newCustomEvent":
+        CustomEvent.encode(message.message.newCustomEvent, writer.uint32(58).fork()).ldelim();
         break;
     }
     return writer;
@@ -290,6 +317,9 @@ export const InBoundMessage = {
             loadParticipantsRes: LoadParticipantsRes.decode(reader, reader.uint32()),
           };
           break;
+        case 7:
+          message.message = { $case: "newCustomEvent", newCustomEvent: CustomEvent.decode(reader, reader.uint32()) };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -324,6 +354,8 @@ export const InBoundMessage = {
           $case: "loadParticipantsRes",
           loadParticipantsRes: LoadParticipantsRes.fromJSON(object.loadParticipantsRes),
         }
+        : isSet(object.newCustomEvent)
+        ? { $case: "newCustomEvent", newCustomEvent: CustomEvent.fromJSON(object.newCustomEvent) }
         : undefined,
     };
   },
@@ -348,6 +380,9 @@ export const InBoundMessage = {
         : undefined);
     message.message?.$case === "loadParticipantsRes" && (obj.loadParticipantsRes = message.message?.loadParticipantsRes
       ? LoadParticipantsRes.toJSON(message.message?.loadParticipantsRes)
+      : undefined);
+    message.message?.$case === "newCustomEvent" && (obj.newCustomEvent = message.message?.newCustomEvent
+      ? CustomEvent.toJSON(message.message?.newCustomEvent)
       : undefined);
     return obj;
   },
@@ -413,6 +448,16 @@ export const InBoundMessage = {
       message.message = {
         $case: "loadParticipantsRes",
         loadParticipantsRes: LoadParticipantsRes.fromPartial(object.message.loadParticipantsRes),
+      };
+    }
+    if (
+      object.message?.$case === "newCustomEvent" &&
+      object.message?.newCustomEvent !== undefined &&
+      object.message?.newCustomEvent !== null
+    ) {
+      message.message = {
+        $case: "newCustomEvent",
+        newCustomEvent: CustomEvent.fromPartial(object.message.newCustomEvent),
       };
     }
     return message;

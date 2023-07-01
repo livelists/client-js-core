@@ -18,6 +18,11 @@ enum MessageSubType {
   TextMessage = 2;
 }
 
+enum WSRoomTypes {
+  Channel = 0;
+  Participant = 1;
+}
+
 message ParticipantShortInfo {
   string identifier = 1;
   google.protobuf.Timestamp lastSeenAt = 2;
@@ -40,6 +45,13 @@ message Message {
   string localId = 6;
   optional CustomData customData = 7;
   google.protobuf.Timestamp createdAt = 8;
+}
+
+message CustomEvent {
+  WSRoomTypes roomType = 1;
+  string roomIdentifier = 2;
+  string eventName = 3;
+  optional CustomData customData = 4;
 }
 
 message CustomData {

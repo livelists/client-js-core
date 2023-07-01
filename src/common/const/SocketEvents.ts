@@ -3,6 +3,7 @@ export enum OutBoundWsEvents {
     JoinChannel = 'joinChannel',
     LoadMoreMessages = 'loadMoreMessages',
     LoadParticipantsReq = 'loadParticipantsReq',
+    SendCustomEvent = 'sendCustomEvent',
 }
 
 export enum InBoundWsEvents {
@@ -12,4 +13,5 @@ export enum InBoundWsEvents {
     ParticipantBecameOnline = 'participantBecameOnline',
     ParticipantBecameOffline = 'participantBecameOffline',
     LoadParticipantsRes = 'loadParticipantsRes',
+    NewCustomEvent = 'newCustomEvent'
 }

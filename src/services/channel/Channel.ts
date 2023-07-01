@@ -8,6 +8,7 @@ import { ChannelParticipantGrants, Message as MessagePB } from '../../proto/mode
 import { WSConnector } from '../../socket/WSConnector';
 import { IChannelArgs, IJoinArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
 import { CustomData } from '../../types/common.types';
+import { CustomEvents } from '../customEvents/CustomEvents';
 import { LocalMessage } from '../message/LocalMessage';
 import { ChannelParticipants } from '../participant/ChannelParticipants';
 import { LocalParticipant } from '../participant/LocalParticipant';
@@ -48,8 +49,12 @@ export class Channel {
     private historyMessages:LocalMessage[] = [];
 
     private isLoadingMore = false;
-    
+
+    private messagesTotalCount:number|null = null;
+
     public channelParticipants:ChannelParticipants| undefined;
+    
+    public customEvents:CustomEvents|undefined;
 
     public async join (args:IJoinArgs) {
         Config.setUrl(args.url);
@@ -57,6 +62,11 @@ export class Channel {
 
         this.socket = new WSConnector();
         this.channelParticipants = new ChannelParticipants({
+            socket: this.socket,
+            emitter: this.emitter,
+        });
+
+        this.customEvents = new CustomEvents({
             socket: this.socket,
             emitter: this.emitter,
         });
@@ -115,6 +125,9 @@ export class Channel {
         if (this.isLoadingMore) {
             return;
         }
+        if ((this.messagesTotalCount || -1) <= this.historyMessages.length + this.recentMessages.length) {
+            return;
+        }
 
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.LoadMoreMessages,
@@ -132,6 +145,8 @@ export class Channel {
         if (!args.isSuccess || !this.localParticipant) {
             throw new LoadMoreMessagesError();
         }
+
+        this.messagesTotalCount = args.totalMessages;
 
         const localMessages = args.messages?.map(
             (m) => new LocalMessage({
@@ -205,6 +220,7 @@ export class Channel {
             this.updateConnectionState(ConnectionStates.ConnectionError);
             return;
         }
+
         const createdParticipant = new LocalParticipant({
             identifier: args.me?.identifier as string,
             grants: args.me?.grants as ChannelParticipantGrants,
@@ -212,6 +228,7 @@ export class Channel {
         });
 
         this.localParticipant = createdParticipant;
+        this.messagesTotalCount = args.channel?.totalMessages || null;
 
         const localMessages =
             args.channel?.historyMessages?.map((m) => new LocalMessage({
@@ -221,6 +238,7 @@ export class Channel {
         if (localMessages) {
             this.pushMessagesToHistoryList(localMessages);
         }
+        this.channelId = args.channel?.channelId;
         this.updateConnectionState(ConnectionStates.Connected);
     }
 

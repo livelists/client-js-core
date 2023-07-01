@@ -1,0 +1,45 @@
+import { EventEmitter } from 'events';
+
+import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
+import { CustomEvent } from '../../proto/models';
+import { WSConnector } from '../../socket/WSConnector';
+import { ICustomEventsArgs } from '../../types/customEvents.types';
+import { CustomEventsEmitEvents, ICustomEventsEmittedEvent, IOnEvent } from './const/EmittedEvents';
+
+export class CustomEvents {
+    constructor({ socket, emitter }:ICustomEventsArgs) {
+        this.socket = socket;
+        this.emitter = emitter;
+
+        this.socket.subscribe({
+            event: InBoundWsEvents.NewCustomEvent,
+            cb: this.onCustomEvent.bind(this),
+        });
+    }
+
+    private socket:WSConnector|undefined;
+
+    private emitter:EventEmitter;
+
+    public sendCustomEvent(data:CustomEvent) {
+        this.socket?.publishMessage({
+            $case: OutBoundWsEvents.SendCustomEvent,
+            [OutBoundWsEvents.SendCustomEvent]: data,
+        });
+    }
+
+    private onCustomEvent(data:CustomEvent) {
+        this.emit({
+            event: CustomEventsEmitEvents.NewCustomEvent,
+            data,
+        });
+    }
+
+    private emit (event:ICustomEventsEmittedEvent) {
+        this.emitter?.emit(event.event, event.data);
+    }
+
+    public on({ event, cb }:IOnEvent<ICustomEventsEmittedEvent['event'], any>) {
+        this.emitter?.on(event, cb);
+    }
+}
