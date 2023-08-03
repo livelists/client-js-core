@@ -1,29 +1,30 @@
 import { EventEmitter } from 'events';
 
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
-import Config from '../../config/Config';
 import { logger } from '../../config/logger';
 import { LoadMoreMessagesRes, MeJoinedToChannel } from '../../proto/events';
 import { ChannelParticipantGrants, Message as MessagePB } from '../../proto/models';
 import { WSConnector } from '../../socket/WSConnector';
-import { IChannelArgs, IJoinArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
-import { CustomData } from '../../types/common.types';
+import { IChannelArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
+import { CustomData, IOnEvent } from '../../types/common.types';
 import { CustomEvents } from '../customEvents/CustomEvents';
 import { LocalMessage } from '../message/LocalMessage';
 import { ChannelParticipants } from '../participant/ChannelParticipants';
 import { LocalParticipant } from '../participant/LocalParticipant';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
-import { ChannelEvents, IChannelEmittedEvent, IOnEvent } from './const/EmittedEvents';
+import { ChannelEvents, IChannelEmittedEvent } from './const/EmittedEvents';
 import { LoadMoreMessagesError, MyLocalParticipantNotExistError } from './errors';
 
 export class Channel {
     constructor({
         initialOffset,
-        initialPageSize
+        initialPageSize,
+        socket,
     }:IChannelArgs) {
         this.initialOffset = initialOffset;
         this.initialPageSize = initialPageSize;
         this.emitter = new EventEmitter();
+        this.socket = socket;
     }
 
     private emitter:EventEmitter;
@@ -32,7 +33,7 @@ export class Channel {
 
     private initialOffset:number;
 
-    private socket:WSConnector|undefined;
+    private socket:WSConnector;
 
     private localParticipant:LocalParticipant|undefined;
 
@@ -56,11 +57,7 @@ export class Channel {
     
     public customEvents:CustomEvents|undefined;
 
-    public async join (args:IJoinArgs) {
-        Config.setUrl(args.url);
-        Config.setAccessToken(args.accessToken);
-
-        this.socket = new WSConnector();
+    public async join () {
         this.channelParticipants = new ChannelParticipants({
             socket: this.socket,
             emitter: this.emitter,
@@ -73,35 +70,35 @@ export class Channel {
 
         this.updateConnectionState(ConnectionStates.Connecting);
 
-        try {
-            await this.socket.openConnection({
-                url:  Config.url,
-                authToken: Config.accessToken,
-            });
-            this.socket.publishMessage({
-                $case: OutBoundWsEvents.JoinChannel,
-                [OutBoundWsEvents.JoinChannel]: {
-                    initialPageSize: this.initialPageSize,
-                    initialOffset: this.initialOffset,
-                }
-            });
-
-            this.socket.subscribe({
-                event: InBoundWsEvents.NewMessage,
-                cb: this.onNewMessage.bind(this),
-            });
-            this.socket.subscribe({
-                event: InBoundWsEvents.MeJoinedToChannel,
-                cb: this.onMeJoinedToChannel.bind(this)
-            });
-            this.socket.subscribe({
-                event: InBoundWsEvents.LoadMoreMessagesRes,
-                cb: this.onLoadMoreMessagesRes.bind(this)
-            });
-        } catch (e) {
-            logger.error('Channel connection error');
+        if (!this.socket.isConnected) {
             this.updateConnectionState(ConnectionStates.ConnectionError);
         }
+        if (this.socket.isConnected)
+            try {
+                this.socket.publishMessage({
+                    $case: OutBoundWsEvents.JoinChannel,
+                    [OutBoundWsEvents.JoinChannel]: {
+                        initialPageSize: this.initialPageSize,
+                        initialOffset: this.initialOffset,
+                    }
+                });
+
+                this.socket.subscribe({
+                    event: InBoundWsEvents.NewMessage,
+                    cb: this.onNewMessage.bind(this),
+                });
+                this.socket.subscribe({
+                    event: InBoundWsEvents.MeJoinedToChannel,
+                    cb: this.onMeJoinedToChannel.bind(this)
+                });
+                this.socket.subscribe({
+                    event: InBoundWsEvents.LoadMoreMessagesRes,
+                    cb: this.onLoadMoreMessagesRes.bind(this)
+                });
+            } catch (e) {
+                logger.error('Channel connection error');
+                this.updateConnectionState(ConnectionStates.ConnectionError);
+            }
     }
 
     public async publishMessage(args:IPublishMessageArgs) {

@@ -182,6 +182,12 @@ export interface CustomData_DataEntry {
   value: string;
 }
 
+export interface ShortChannel {
+  id: string;
+  identifier: string;
+  customData?: CustomData | undefined;
+}
+
 function createBaseParticipantShortInfo(): ParticipantShortInfo {
   return { identifier: "", lastSeenAt: undefined, isOnline: false, customData: undefined };
 }
@@ -676,6 +682,80 @@ export const CustomData_DataEntry = {
     const message = createBaseCustomData_DataEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseShortChannel(): ShortChannel {
+  return { id: "", identifier: "", customData: undefined };
+}
+
+export const ShortChannel = {
+  encode(message: ShortChannel, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.id !== "") {
+      writer.uint32(10).string(message.id);
+    }
+    if (message.identifier !== "") {
+      writer.uint32(18).string(message.identifier);
+    }
+    if (message.customData !== undefined) {
+      CustomData.encode(message.customData, writer.uint32(34).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ShortChannel {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseShortChannel();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.id = reader.string();
+          break;
+        case 2:
+          message.identifier = reader.string();
+          break;
+        case 4:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ShortChannel {
+    return {
+      id: isSet(object.id) ? String(object.id) : "",
+      identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
+    };
+  },
+
+  toJSON(message: ShortChannel): unknown {
+    const obj: any = {};
+    message.id !== undefined && (obj.id = message.id);
+    message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.customData !== undefined &&
+      (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ShortChannel>, I>>(base?: I): ShortChannel {
+    return ShortChannel.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ShortChannel>, I>>(object: I): ShortChannel {
+    const message = createBaseShortChannel();
+    message.id = object.id ?? "";
+    message.identifier = object.identifier ?? "";
+    message.customData = (object.customData !== undefined && object.customData !== null)
+      ? CustomData.fromPartial(object.customData)
+      : undefined;
     return message;
   },
 };

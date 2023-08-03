@@ -1,20 +1,33 @@
 import {
+    ChannelWithMsg,
+} from './proto/events';
+import {
     Message,
     ParticipantShortInfo,
     WSRoomTypes,
     CustomEvent,
+    ShortChannel,
 } from './proto/models';
 import { Channel } from './services/channel/Channel';
 import { ConnectionState, ConnectionStates } from './services/channel/const/ConnectionState';
 import {
     ChannelEvents,
-    IOnEvent,
     IRecentMessagesUpdated,
     IHistoryMessagesUpdated,
     IConnectionStateUpdated,
     IChannelEmittedEvent,
     IIsLoadingMoreUpdated
 } from './services/channel/const/EmittedEvents';
+import {
+    ChannelsAggregation,
+} from './services/channelsAggregation/ChannelsAggregation';
+import {
+    ChannelsAggregationEvents,
+    IChannelsListUpdated,
+} from './services/channelsAggregation/const/EmittedEvents';
+import {
+    LocalShortChannel,
+} from './services/channelsAggregation/LocalShortChannel';
 import {
     CustomEventsEmitEvents,
     INewCustomEvents,
@@ -34,9 +47,18 @@ import {
     ChannelParticipantsEvents,
 } from './services/participant/const/EmittedEvents';
 import {
+    WSConnector
+} from './socket/WSConnector';
+import {
     ILoadMoreMessagesArgs,
 } from './types/channel.types';
-import { CustomData } from './types/common.types';
+import {
+    ILoadChannelsArgs,
+} from './types/channelsAggregation.types';
+import {
+    CustomData,
+    IOnEvent,
+} from './types/common.types';
 
 export {
     Channel,
@@ -67,4 +89,12 @@ export {
     CustomEvents,
     WSRoomTypes,
     CustomEvent,
+    WSConnector,
+    ChannelsAggregation,
+    LocalShortChannel,
+    ILoadChannelsArgs,
+    ChannelWithMsg,
+    ShortChannel,
+    ChannelsAggregationEvents,
+    IChannelsListUpdated
 };

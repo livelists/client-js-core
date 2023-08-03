@@ -10,8 +10,3 @@ export interface INewCustomEvents {
 }
 
 export type ICustomEventsEmittedEvent = INewCustomEvents;
-
-export type IOnEvent<E, D> = {
-    event: E,
-    cb: (data:D) => void,
-}
