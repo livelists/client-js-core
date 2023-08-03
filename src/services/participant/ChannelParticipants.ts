@@ -4,8 +4,9 @@ import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEven
 import { LoadParticipantsRes, ParticipantBecameOffline, ParticipantBecameOnline, } from '../../proto/events';
 import { ParticipantShortInfo } from '../../proto/models';
 import { WSConnector } from '../../socket/WSConnector';
+import { IOnEvent } from '../../types/common.types';
 import { IChannelParticipantsArgs } from '../../types/participant.types';
-import { ChannelParticipantsEvents, IChannelParticipantsEmittedEvent, IOnEvent } from './const/EmittedEvents';
+import { ChannelParticipantsEvents, IChannelParticipantsEmittedEvent } from './const/EmittedEvents';
 
 export class ChannelParticipants {
     constructor({ socket, emitter }:IChannelParticipantsArgs) {

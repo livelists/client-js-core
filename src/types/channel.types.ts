@@ -1,13 +1,10 @@
+import { WSConnector } from '../socket/WSConnector';
 import { CustomData } from './common.types';
 
 export interface IChannelArgs {
     initialPageSize: number,
     initialOffset: number,
-}
-
-export interface IJoinArgs {
-    url: string,
-    accessToken: string,
+    socket: WSConnector,
 }
 
 export interface IPublishMessageArgs {

@@ -3,47 +3,18 @@ import Config from '../config/Config';
 import { logger } from '../config/logger';
 import {
     InBoundMessage,
-    LoadMoreMessagesRes,
-    MeJoinedToChannel,
     OutBoundMessage,
-    LoadParticipantsRes,
-    ParticipantBecameOffline,
-    ParticipantBecameOnline,
 } from '../proto/events';
-import { Message, CustomEvent } from '../proto/models';
 import { ConnectionError } from '../services/channel/errors';
-import { IOpenConnectionArgs } from '../types/websocket.types';
+import { IOpenConnectionArgs, ISubscribeArgs } from '../types/websocket.types';
 
 type OutBoundMessageData = OutBoundMessage['message']
-
-type ISubscribeArgs = {
-    event: InBoundWsEvents.MeJoinedToChannel,
-    cb: (args:MeJoinedToChannel) => void,
-} | {
-    event: InBoundWsEvents.NewMessage,
-    cb: (args: Message) => void,
-} | {
-    event: InBoundWsEvents.LoadMoreMessagesRes,
-    cb: (args: LoadMoreMessagesRes) => void,
-} | {
-    event: InBoundWsEvents.LoadParticipantsRes,
-    cb: (args: LoadParticipantsRes) => void,
-} | {
-    event: InBoundWsEvents.ParticipantBecameOffline,
-    cb: (args: ParticipantBecameOffline) => void,
-} | {
-    event: InBoundWsEvents.ParticipantBecameOnline,
-    cb: (args: ParticipantBecameOnline) => void,
-} | {
-    event: InBoundWsEvents.NewCustomEvent,
-    cb: (args: CustomEvent) => void,
-};
 
 
 export class WSConnector {
     private ws?:WebSocket;
 
-    private isConnected:boolean = false;
+    public isConnected:boolean = false;
 
     private useJSON: boolean = false;
 
@@ -64,6 +35,9 @@ export class WSConnector {
     }
 
     public openConnection (args:IOpenConnectionArgs) {
+        Config.setUrl(args.url);
+        Config.setAccessToken(args.authToken);
+
         logger.info('open connection');
         logger.info(Config.url);
 
@@ -92,6 +66,7 @@ export class WSConnector {
             };
 
             ws.onopen = () => {
+                this.isConnected = true;
                 this.ws = ws;
                 resolve();
             };
@@ -221,6 +196,12 @@ export class WSConnector {
                 this.callListeners({
                     event: event as InBoundWsEvents,
                     data: message.message?.newCustomEvent,
+                });
+                break;
+            case InBoundWsEvents.LoadChannelsWithMsgRes:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.loadChannelsWithMsgRes,
                 });
                 break;
         }

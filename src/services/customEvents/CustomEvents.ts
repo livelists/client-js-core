@@ -3,8 +3,9 @@ import { EventEmitter } from 'events';
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
 import { CustomEvent } from '../../proto/models';
 import { WSConnector } from '../../socket/WSConnector';
+import { IOnEvent } from '../../types/common.types';
 import { ICustomEventsArgs } from '../../types/customEvents.types';
-import { CustomEventsEmitEvents, ICustomEventsEmittedEvent, IOnEvent } from './const/EmittedEvents';
+import { CustomEventsEmitEvents, ICustomEventsEmittedEvent } from './const/EmittedEvents';
 
 export class CustomEvents {
     constructor({ socket, emitter }:ICustomEventsArgs) {

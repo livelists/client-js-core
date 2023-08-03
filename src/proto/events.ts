@@ -2,7 +2,14 @@
 import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Timestamp } from "./google/protobuf/timestamp";
-import { ChannelParticipantGrants, CustomData, CustomEvent, Message, ParticipantShortInfo } from "./models";
+import {
+  ChannelParticipantGrants,
+  CustomData,
+  CustomEvent,
+  Message,
+  ParticipantShortInfo,
+  ShortChannel,
+} from "./models";
 
 export const protobufPackage = "";
 
@@ -12,7 +19,8 @@ export interface OutBoundMessage {
     | { $case: "joinChannel"; joinChannel: JoinChannel }
     | { $case: "loadMoreMessages"; loadMoreMessages: LoadMoreMessages }
     | { $case: "loadParticipantsReq"; loadParticipantsReq: LoadParticipantsReq }
-    | { $case: "sendCustomEvent"; sendCustomEvent: CustomEvent };
+    | { $case: "sendCustomEvent"; sendCustomEvent: CustomEvent }
+    | { $case: "loadChannelsWithMsgReq"; loadChannelsWithMsgReq: LoadChannelsWithMsgReq };
 }
 
 export interface InBoundMessage {
@@ -23,7 +31,8 @@ export interface InBoundMessage {
     | { $case: "participantBecameOnline"; participantBecameOnline: ParticipantBecameOnline }
     | { $case: "participantBecameOffline"; participantBecameOffline: ParticipantBecameOffline }
     | { $case: "loadParticipantsRes"; loadParticipantsRes: LoadParticipantsRes }
-    | { $case: "newCustomEvent"; newCustomEvent: CustomEvent };
+    | { $case: "newCustomEvent"; newCustomEvent: CustomEvent }
+    | { $case: "loadChannelsWithMsgRes"; loadChannelsWithMsgRes: LoadChannelsWithMsgRes };
 }
 
 export interface SendMessage {
@@ -92,6 +101,19 @@ export interface LoadParticipantsRes {
   pageSize: number;
 }
 
+export interface LoadChannelsWithMsgReq {
+  messagesLimit: number;
+}
+
+export interface ChannelWithMsg {
+  channel?: ShortChannel;
+  messages: Message[];
+}
+
+export interface LoadChannelsWithMsgRes {
+  channels: ChannelWithMsg[];
+}
+
 function createBaseOutBoundMessage(): OutBoundMessage {
   return { message: undefined };
 }
@@ -113,6 +135,9 @@ export const OutBoundMessage = {
         break;
       case "sendCustomEvent":
         CustomEvent.encode(message.message.sendCustomEvent, writer.uint32(42).fork()).ldelim();
+        break;
+      case "loadChannelsWithMsgReq":
+        LoadChannelsWithMsgReq.encode(message.message.loadChannelsWithMsgReq, writer.uint32(50).fork()).ldelim();
         break;
     }
     return writer;
@@ -146,6 +171,12 @@ export const OutBoundMessage = {
         case 5:
           message.message = { $case: "sendCustomEvent", sendCustomEvent: CustomEvent.decode(reader, reader.uint32()) };
           break;
+        case 6:
+          message.message = {
+            $case: "loadChannelsWithMsgReq",
+            loadChannelsWithMsgReq: LoadChannelsWithMsgReq.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -169,6 +200,11 @@ export const OutBoundMessage = {
         }
         : isSet(object.sendCustomEvent)
         ? { $case: "sendCustomEvent", sendCustomEvent: CustomEvent.fromJSON(object.sendCustomEvent) }
+        : isSet(object.loadChannelsWithMsgReq)
+        ? {
+          $case: "loadChannelsWithMsgReq",
+          loadChannelsWithMsgReq: LoadChannelsWithMsgReq.fromJSON(object.loadChannelsWithMsgReq),
+        }
         : undefined,
     };
   },
@@ -188,6 +224,10 @@ export const OutBoundMessage = {
     message.message?.$case === "sendCustomEvent" && (obj.sendCustomEvent = message.message?.sendCustomEvent
       ? CustomEvent.toJSON(message.message?.sendCustomEvent)
       : undefined);
+    message.message?.$case === "loadChannelsWithMsgReq" &&
+      (obj.loadChannelsWithMsgReq = message.message?.loadChannelsWithMsgReq
+        ? LoadChannelsWithMsgReq.toJSON(message.message?.loadChannelsWithMsgReq)
+        : undefined);
     return obj;
   },
 
@@ -241,6 +281,16 @@ export const OutBoundMessage = {
         sendCustomEvent: CustomEvent.fromPartial(object.message.sendCustomEvent),
       };
     }
+    if (
+      object.message?.$case === "loadChannelsWithMsgReq" &&
+      object.message?.loadChannelsWithMsgReq !== undefined &&
+      object.message?.loadChannelsWithMsgReq !== null
+    ) {
+      message.message = {
+        $case: "loadChannelsWithMsgReq",
+        loadChannelsWithMsgReq: LoadChannelsWithMsgReq.fromPartial(object.message.loadChannelsWithMsgReq),
+      };
+    }
     return message;
   },
 };
@@ -272,6 +322,9 @@ export const InBoundMessage = {
         break;
       case "newCustomEvent":
         CustomEvent.encode(message.message.newCustomEvent, writer.uint32(58).fork()).ldelim();
+        break;
+      case "loadChannelsWithMsgRes":
+        LoadChannelsWithMsgRes.encode(message.message.loadChannelsWithMsgRes, writer.uint32(66).fork()).ldelim();
         break;
     }
     return writer;
@@ -320,6 +373,12 @@ export const InBoundMessage = {
         case 7:
           message.message = { $case: "newCustomEvent", newCustomEvent: CustomEvent.decode(reader, reader.uint32()) };
           break;
+        case 8:
+          message.message = {
+            $case: "loadChannelsWithMsgRes",
+            loadChannelsWithMsgRes: LoadChannelsWithMsgRes.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -356,6 +415,11 @@ export const InBoundMessage = {
         }
         : isSet(object.newCustomEvent)
         ? { $case: "newCustomEvent", newCustomEvent: CustomEvent.fromJSON(object.newCustomEvent) }
+        : isSet(object.loadChannelsWithMsgRes)
+        ? {
+          $case: "loadChannelsWithMsgRes",
+          loadChannelsWithMsgRes: LoadChannelsWithMsgRes.fromJSON(object.loadChannelsWithMsgRes),
+        }
         : undefined,
     };
   },
@@ -384,6 +448,10 @@ export const InBoundMessage = {
     message.message?.$case === "newCustomEvent" && (obj.newCustomEvent = message.message?.newCustomEvent
       ? CustomEvent.toJSON(message.message?.newCustomEvent)
       : undefined);
+    message.message?.$case === "loadChannelsWithMsgRes" &&
+      (obj.loadChannelsWithMsgRes = message.message?.loadChannelsWithMsgRes
+        ? LoadChannelsWithMsgRes.toJSON(message.message?.loadChannelsWithMsgRes)
+        : undefined);
     return obj;
   },
 
@@ -458,6 +526,16 @@ export const InBoundMessage = {
       message.message = {
         $case: "newCustomEvent",
         newCustomEvent: CustomEvent.fromPartial(object.message.newCustomEvent),
+      };
+    }
+    if (
+      object.message?.$case === "loadChannelsWithMsgRes" &&
+      object.message?.loadChannelsWithMsgRes !== undefined &&
+      object.message?.loadChannelsWithMsgRes !== null
+    ) {
+      message.message = {
+        $case: "loadChannelsWithMsgRes",
+        loadChannelsWithMsgRes: LoadChannelsWithMsgRes.fromPartial(object.message.loadChannelsWithMsgRes),
       };
     }
     return message;
@@ -1291,6 +1369,182 @@ export const LoadParticipantsRes = {
     const message = createBaseLoadParticipantsRes();
     message.participants = object.participants?.map((e) => ParticipantShortInfo.fromPartial(e)) || [];
     message.pageSize = object.pageSize ?? 0;
+    return message;
+  },
+};
+
+function createBaseLoadChannelsWithMsgReq(): LoadChannelsWithMsgReq {
+  return { messagesLimit: 0 };
+}
+
+export const LoadChannelsWithMsgReq = {
+  encode(message: LoadChannelsWithMsgReq, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.messagesLimit !== 0) {
+      writer.uint32(8).int32(message.messagesLimit);
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadChannelsWithMsgReq {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadChannelsWithMsgReq();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.messagesLimit = reader.int32();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadChannelsWithMsgReq {
+    return { messagesLimit: isSet(object.messagesLimit) ? Number(object.messagesLimit) : 0 };
+  },
+
+  toJSON(message: LoadChannelsWithMsgReq): unknown {
+    const obj: any = {};
+    message.messagesLimit !== undefined && (obj.messagesLimit = Math.round(message.messagesLimit));
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadChannelsWithMsgReq>, I>>(base?: I): LoadChannelsWithMsgReq {
+    return LoadChannelsWithMsgReq.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadChannelsWithMsgReq>, I>>(object: I): LoadChannelsWithMsgReq {
+    const message = createBaseLoadChannelsWithMsgReq();
+    message.messagesLimit = object.messagesLimit ?? 0;
+    return message;
+  },
+};
+
+function createBaseChannelWithMsg(): ChannelWithMsg {
+  return { channel: undefined, messages: [] };
+}
+
+export const ChannelWithMsg = {
+  encode(message: ChannelWithMsg, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channel !== undefined) {
+      ShortChannel.encode(message.channel, writer.uint32(10).fork()).ldelim();
+    }
+    for (const v of message.messages) {
+      Message.encode(v!, writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChannelWithMsg {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChannelWithMsg();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channel = ShortChannel.decode(reader, reader.uint32());
+          break;
+        case 2:
+          message.messages.push(Message.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChannelWithMsg {
+    return {
+      channel: isSet(object.channel) ? ShortChannel.fromJSON(object.channel) : undefined,
+      messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => Message.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: ChannelWithMsg): unknown {
+    const obj: any = {};
+    message.channel !== undefined && (obj.channel = message.channel ? ShortChannel.toJSON(message.channel) : undefined);
+    if (message.messages) {
+      obj.messages = message.messages.map((e) => e ? Message.toJSON(e) : undefined);
+    } else {
+      obj.messages = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ChannelWithMsg>, I>>(base?: I): ChannelWithMsg {
+    return ChannelWithMsg.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ChannelWithMsg>, I>>(object: I): ChannelWithMsg {
+    const message = createBaseChannelWithMsg();
+    message.channel = (object.channel !== undefined && object.channel !== null)
+      ? ShortChannel.fromPartial(object.channel)
+      : undefined;
+    message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseLoadChannelsWithMsgRes(): LoadChannelsWithMsgRes {
+  return { channels: [] };
+}
+
+export const LoadChannelsWithMsgRes = {
+  encode(message: LoadChannelsWithMsgRes, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    for (const v of message.channels) {
+      ChannelWithMsg.encode(v!, writer.uint32(10).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): LoadChannelsWithMsgRes {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseLoadChannelsWithMsgRes();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channels.push(ChannelWithMsg.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): LoadChannelsWithMsgRes {
+    return {
+      channels: Array.isArray(object?.channels) ? object.channels.map((e: any) => ChannelWithMsg.fromJSON(e)) : [],
+    };
+  },
+
+  toJSON(message: LoadChannelsWithMsgRes): unknown {
+    const obj: any = {};
+    if (message.channels) {
+      obj.channels = message.channels.map((e) => e ? ChannelWithMsg.toJSON(e) : undefined);
+    } else {
+      obj.channels = [];
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<LoadChannelsWithMsgRes>, I>>(base?: I): LoadChannelsWithMsgRes {
+    return LoadChannelsWithMsgRes.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<LoadChannelsWithMsgRes>, I>>(object: I): LoadChannelsWithMsgRes {
+    const message = createBaseLoadChannelsWithMsgRes();
+    message.channels = object.channels?.map((e) => ChannelWithMsg.fromPartial(e)) || [];
     return message;
   },
 };

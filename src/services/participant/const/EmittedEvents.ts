@@ -37,8 +37,3 @@ export interface IParticipantsLoaded {
 
 export type IChannelParticipantsEmittedEvent =
     IParticipantBecameOnline | IParticipantBecameOffline | IParticipantsUpdated | IParticipantsLoaded;
-
-export type IOnEvent<E, D> = {
-    event: E,
-    cb: (data:D) => void,
-}
