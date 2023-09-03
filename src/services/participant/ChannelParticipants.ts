@@ -9,9 +9,10 @@ import { IChannelParticipantsArgs } from '../../types/participant.types';
 import { ChannelParticipantsEvents, IChannelParticipantsEmittedEvent } from './const/EmittedEvents';
 
 export class ChannelParticipants {
-    constructor({ socket, emitter }:IChannelParticipantsArgs) {
+    constructor({ socket, emitter, channelId }:IChannelParticipantsArgs) {
         this.socket = socket;
         this.emitter = emitter;
+        this.channelId = channelId;
 
         this.socket.subscribe({
             event: InBoundWsEvents.LoadParticipantsRes,
@@ -29,6 +30,8 @@ export class ChannelParticipants {
 
     private isParticipantsLoaded:boolean = false;
 
+    private channelId:string;
+
     private participantsList:ParticipantShortInfo[] = [];
     
     private socket:WSConnector|undefined;
@@ -39,6 +42,7 @@ export class ChannelParticipants {
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.LoadParticipantsReq,
             [OutBoundWsEvents.LoadParticipantsReq]: {
+                channelId: this.channelId,
                 pageSize: 1000,
             },
         });

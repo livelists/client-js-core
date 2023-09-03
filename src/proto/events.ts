@@ -36,12 +36,14 @@ export interface InBoundMessage {
 }
 
 export interface SendMessage {
+  channelId: string;
   text: string;
   localId: string;
   customData?: CustomData | undefined;
 }
 
 export interface JoinChannel {
+  channelId: string;
   initialPageSize: number;
   initialOffset: number;
 }
@@ -65,15 +67,16 @@ export interface MeJoinedToChannel {
 }
 
 export interface LoadMoreMessages {
-  PageSize: number;
-  FirstLoadedCreatedAt?: Date | undefined;
-  SkipFromFirstLoaded: number;
+  channelId: string;
+  pageSize: number;
+  firstLoadedCreatedAt?: Date | undefined;
+  skipFromFirstLoaded: number;
 }
 
 export interface LoadMoreMessagesRequestInfo {
-  PageSize: number;
-  FirstLoadedCreatedAt?: Date | undefined;
-  SkipFromFirstLoaded: number;
+  pageSize: number;
+  firstLoadedCreatedAt?: Date | undefined;
+  skipFromFirstLoaded: number;
 }
 
 export interface LoadMoreMessagesRes {
@@ -93,6 +96,7 @@ export interface ParticipantBecameOffline {
 }
 
 export interface LoadParticipantsReq {
+  channelId: string;
   pageSize: number;
 }
 
@@ -543,19 +547,22 @@ export const InBoundMessage = {
 };
 
 function createBaseSendMessage(): SendMessage {
-  return { text: "", localId: "", customData: undefined };
+  return { channelId: "", text: "", localId: "", customData: undefined };
 }
 
 export const SendMessage = {
   encode(message: SendMessage, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
     if (message.text !== "") {
-      writer.uint32(10).string(message.text);
+      writer.uint32(18).string(message.text);
     }
     if (message.localId !== "") {
-      writer.uint32(18).string(message.localId);
+      writer.uint32(26).string(message.localId);
     }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(26).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -568,12 +575,15 @@ export const SendMessage = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.text = reader.string();
+          message.channelId = reader.string();
           break;
         case 2:
-          message.localId = reader.string();
+          message.text = reader.string();
           break;
         case 3:
+          message.localId = reader.string();
+          break;
+        case 4:
           message.customData = CustomData.decode(reader, reader.uint32());
           break;
         default:
@@ -586,6 +596,7 @@ export const SendMessage = {
 
   fromJSON(object: any): SendMessage {
     return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
       text: isSet(object.text) ? String(object.text) : "",
       localId: isSet(object.localId) ? String(object.localId) : "",
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
@@ -594,6 +605,7 @@ export const SendMessage = {
 
   toJSON(message: SendMessage): unknown {
     const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
     message.text !== undefined && (obj.text = message.text);
     message.localId !== undefined && (obj.localId = message.localId);
     message.customData !== undefined &&
@@ -607,6 +619,7 @@ export const SendMessage = {
 
   fromPartial<I extends Exact<DeepPartial<SendMessage>, I>>(object: I): SendMessage {
     const message = createBaseSendMessage();
+    message.channelId = object.channelId ?? "";
     message.text = object.text ?? "";
     message.localId = object.localId ?? "";
     message.customData = (object.customData !== undefined && object.customData !== null)
@@ -617,16 +630,19 @@ export const SendMessage = {
 };
 
 function createBaseJoinChannel(): JoinChannel {
-  return { initialPageSize: 0, initialOffset: 0 };
+  return { channelId: "", initialPageSize: 0, initialOffset: 0 };
 }
 
 export const JoinChannel = {
   encode(message: JoinChannel, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
     if (message.initialPageSize !== 0) {
-      writer.uint32(8).int64(message.initialPageSize);
+      writer.uint32(16).int64(message.initialPageSize);
     }
     if (message.initialOffset !== 0) {
-      writer.uint32(16).int64(message.initialOffset);
+      writer.uint32(24).int64(message.initialOffset);
     }
     return writer;
   },
@@ -639,9 +655,12 @@ export const JoinChannel = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.initialPageSize = longToNumber(reader.int64() as Long);
+          message.channelId = reader.string();
           break;
         case 2:
+          message.initialPageSize = longToNumber(reader.int64() as Long);
+          break;
+        case 3:
           message.initialOffset = longToNumber(reader.int64() as Long);
           break;
         default:
@@ -654,6 +673,7 @@ export const JoinChannel = {
 
   fromJSON(object: any): JoinChannel {
     return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
       initialPageSize: isSet(object.initialPageSize) ? Number(object.initialPageSize) : 0,
       initialOffset: isSet(object.initialOffset) ? Number(object.initialOffset) : 0,
     };
@@ -661,6 +681,7 @@ export const JoinChannel = {
 
   toJSON(message: JoinChannel): unknown {
     const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
     message.initialPageSize !== undefined && (obj.initialPageSize = Math.round(message.initialPageSize));
     message.initialOffset !== undefined && (obj.initialOffset = Math.round(message.initialOffset));
     return obj;
@@ -672,6 +693,7 @@ export const JoinChannel = {
 
   fromPartial<I extends Exact<DeepPartial<JoinChannel>, I>>(object: I): JoinChannel {
     const message = createBaseJoinChannel();
+    message.channelId = object.channelId ?? "";
     message.initialPageSize = object.initialPageSize ?? 0;
     message.initialOffset = object.initialOffset ?? 0;
     return message;
@@ -907,19 +929,22 @@ export const MeJoinedToChannel = {
 };
 
 function createBaseLoadMoreMessages(): LoadMoreMessages {
-  return { PageSize: 0, FirstLoadedCreatedAt: undefined, SkipFromFirstLoaded: 0 };
+  return { channelId: "", pageSize: 0, firstLoadedCreatedAt: undefined, skipFromFirstLoaded: 0 };
 }
 
 export const LoadMoreMessages = {
   encode(message: LoadMoreMessages, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.PageSize !== 0) {
-      writer.uint32(8).int32(message.PageSize);
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
     }
-    if (message.FirstLoadedCreatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.FirstLoadedCreatedAt), writer.uint32(18).fork()).ldelim();
+    if (message.pageSize !== 0) {
+      writer.uint32(16).int32(message.pageSize);
     }
-    if (message.SkipFromFirstLoaded !== 0) {
-      writer.uint32(24).int32(message.SkipFromFirstLoaded);
+    if (message.firstLoadedCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.firstLoadedCreatedAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.skipFromFirstLoaded !== 0) {
+      writer.uint32(32).int32(message.skipFromFirstLoaded);
     }
     return writer;
   },
@@ -932,13 +957,16 @@ export const LoadMoreMessages = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.PageSize = reader.int32();
+          message.channelId = reader.string();
           break;
         case 2:
-          message.FirstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.pageSize = reader.int32();
           break;
         case 3:
-          message.SkipFromFirstLoaded = reader.int32();
+          message.firstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 4:
+          message.skipFromFirstLoaded = reader.int32();
           break;
         default:
           reader.skipType(tag & 7);
@@ -950,20 +978,22 @@ export const LoadMoreMessages = {
 
   fromJSON(object: any): LoadMoreMessages {
     return {
-      PageSize: isSet(object.PageSize) ? Number(object.PageSize) : 0,
-      FirstLoadedCreatedAt: isSet(object.FirstLoadedCreatedAt)
-        ? fromJsonTimestamp(object.FirstLoadedCreatedAt)
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      firstLoadedCreatedAt: isSet(object.firstLoadedCreatedAt)
+        ? fromJsonTimestamp(object.firstLoadedCreatedAt)
         : undefined,
-      SkipFromFirstLoaded: isSet(object.SkipFromFirstLoaded) ? Number(object.SkipFromFirstLoaded) : 0,
+      skipFromFirstLoaded: isSet(object.skipFromFirstLoaded) ? Number(object.skipFromFirstLoaded) : 0,
     };
   },
 
   toJSON(message: LoadMoreMessages): unknown {
     const obj: any = {};
-    message.PageSize !== undefined && (obj.PageSize = Math.round(message.PageSize));
-    message.FirstLoadedCreatedAt !== undefined &&
-      (obj.FirstLoadedCreatedAt = message.FirstLoadedCreatedAt.toISOString());
-    message.SkipFromFirstLoaded !== undefined && (obj.SkipFromFirstLoaded = Math.round(message.SkipFromFirstLoaded));
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.firstLoadedCreatedAt !== undefined &&
+      (obj.firstLoadedCreatedAt = message.firstLoadedCreatedAt.toISOString());
+    message.skipFromFirstLoaded !== undefined && (obj.skipFromFirstLoaded = Math.round(message.skipFromFirstLoaded));
     return obj;
   },
 
@@ -973,27 +1003,28 @@ export const LoadMoreMessages = {
 
   fromPartial<I extends Exact<DeepPartial<LoadMoreMessages>, I>>(object: I): LoadMoreMessages {
     const message = createBaseLoadMoreMessages();
-    message.PageSize = object.PageSize ?? 0;
-    message.FirstLoadedCreatedAt = object.FirstLoadedCreatedAt ?? undefined;
-    message.SkipFromFirstLoaded = object.SkipFromFirstLoaded ?? 0;
+    message.channelId = object.channelId ?? "";
+    message.pageSize = object.pageSize ?? 0;
+    message.firstLoadedCreatedAt = object.firstLoadedCreatedAt ?? undefined;
+    message.skipFromFirstLoaded = object.skipFromFirstLoaded ?? 0;
     return message;
   },
 };
 
 function createBaseLoadMoreMessagesRequestInfo(): LoadMoreMessagesRequestInfo {
-  return { PageSize: 0, FirstLoadedCreatedAt: undefined, SkipFromFirstLoaded: 0 };
+  return { pageSize: 0, firstLoadedCreatedAt: undefined, skipFromFirstLoaded: 0 };
 }
 
 export const LoadMoreMessagesRequestInfo = {
   encode(message: LoadMoreMessagesRequestInfo, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.PageSize !== 0) {
-      writer.uint32(8).int32(message.PageSize);
+    if (message.pageSize !== 0) {
+      writer.uint32(8).int32(message.pageSize);
     }
-    if (message.FirstLoadedCreatedAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.FirstLoadedCreatedAt), writer.uint32(18).fork()).ldelim();
+    if (message.firstLoadedCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.firstLoadedCreatedAt), writer.uint32(18).fork()).ldelim();
     }
-    if (message.SkipFromFirstLoaded !== 0) {
-      writer.uint32(24).int32(message.SkipFromFirstLoaded);
+    if (message.skipFromFirstLoaded !== 0) {
+      writer.uint32(24).int32(message.skipFromFirstLoaded);
     }
     return writer;
   },
@@ -1006,13 +1037,13 @@ export const LoadMoreMessagesRequestInfo = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.PageSize = reader.int32();
+          message.pageSize = reader.int32();
           break;
         case 2:
-          message.FirstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.firstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 3:
-          message.SkipFromFirstLoaded = reader.int32();
+          message.skipFromFirstLoaded = reader.int32();
           break;
         default:
           reader.skipType(tag & 7);
@@ -1024,20 +1055,20 @@ export const LoadMoreMessagesRequestInfo = {
 
   fromJSON(object: any): LoadMoreMessagesRequestInfo {
     return {
-      PageSize: isSet(object.PageSize) ? Number(object.PageSize) : 0,
-      FirstLoadedCreatedAt: isSet(object.FirstLoadedCreatedAt)
-        ? fromJsonTimestamp(object.FirstLoadedCreatedAt)
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+      firstLoadedCreatedAt: isSet(object.firstLoadedCreatedAt)
+        ? fromJsonTimestamp(object.firstLoadedCreatedAt)
         : undefined,
-      SkipFromFirstLoaded: isSet(object.SkipFromFirstLoaded) ? Number(object.SkipFromFirstLoaded) : 0,
+      skipFromFirstLoaded: isSet(object.skipFromFirstLoaded) ? Number(object.skipFromFirstLoaded) : 0,
     };
   },
 
   toJSON(message: LoadMoreMessagesRequestInfo): unknown {
     const obj: any = {};
-    message.PageSize !== undefined && (obj.PageSize = Math.round(message.PageSize));
-    message.FirstLoadedCreatedAt !== undefined &&
-      (obj.FirstLoadedCreatedAt = message.FirstLoadedCreatedAt.toISOString());
-    message.SkipFromFirstLoaded !== undefined && (obj.SkipFromFirstLoaded = Math.round(message.SkipFromFirstLoaded));
+    message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
+    message.firstLoadedCreatedAt !== undefined &&
+      (obj.firstLoadedCreatedAt = message.firstLoadedCreatedAt.toISOString());
+    message.skipFromFirstLoaded !== undefined && (obj.skipFromFirstLoaded = Math.round(message.skipFromFirstLoaded));
     return obj;
   },
 
@@ -1047,9 +1078,9 @@ export const LoadMoreMessagesRequestInfo = {
 
   fromPartial<I extends Exact<DeepPartial<LoadMoreMessagesRequestInfo>, I>>(object: I): LoadMoreMessagesRequestInfo {
     const message = createBaseLoadMoreMessagesRequestInfo();
-    message.PageSize = object.PageSize ?? 0;
-    message.FirstLoadedCreatedAt = object.FirstLoadedCreatedAt ?? undefined;
-    message.SkipFromFirstLoaded = object.SkipFromFirstLoaded ?? 0;
+    message.pageSize = object.pageSize ?? 0;
+    message.firstLoadedCreatedAt = object.firstLoadedCreatedAt ?? undefined;
+    message.skipFromFirstLoaded = object.skipFromFirstLoaded ?? 0;
     return message;
   },
 };
@@ -1255,13 +1286,16 @@ export const ParticipantBecameOffline = {
 };
 
 function createBaseLoadParticipantsReq(): LoadParticipantsReq {
-  return { pageSize: 0 };
+  return { channelId: "", pageSize: 0 };
 }
 
 export const LoadParticipantsReq = {
   encode(message: LoadParticipantsReq, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
     if (message.pageSize !== 0) {
-      writer.uint32(8).int32(message.pageSize);
+      writer.uint32(16).int32(message.pageSize);
     }
     return writer;
   },
@@ -1274,6 +1308,9 @@ export const LoadParticipantsReq = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
+          message.channelId = reader.string();
+          break;
+        case 2:
           message.pageSize = reader.int32();
           break;
         default:
@@ -1285,11 +1322,15 @@ export const LoadParticipantsReq = {
   },
 
   fromJSON(object: any): LoadParticipantsReq {
-    return { pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0 };
+    return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      pageSize: isSet(object.pageSize) ? Number(object.pageSize) : 0,
+    };
   },
 
   toJSON(message: LoadParticipantsReq): unknown {
     const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     return obj;
   },
@@ -1300,6 +1341,7 @@ export const LoadParticipantsReq = {
 
   fromPartial<I extends Exact<DeepPartial<LoadParticipantsReq>, I>>(object: I): LoadParticipantsReq {
     const message = createBaseLoadParticipantsReq();
+    message.channelId = object.channelId ?? "";
     message.pageSize = object.pageSize ?? 0;
     return message;
   },

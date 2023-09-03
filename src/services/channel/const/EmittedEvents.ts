@@ -5,7 +5,8 @@ export enum ChannelEvents {
     RecentMessagesUpdated = 'recentMessagesUpdated',
     HistoryMessagesUpdated = 'historyMessagesUpdated',
     ConnectionStateUpdated = 'connectionStateUpdated',
-    IsLoadingMoreUpdated = 'isLoadingMoreUpdated'
+    IsLoadingMoreUpdated = 'isLoadingMoreUpdated',
+    ShouldScrollToBottom = 'shouldScrollToBottom'
 }
 
 export interface IRecentMessagesUpdated {
@@ -36,4 +37,14 @@ export interface IIsLoadingMoreUpdated {
     }
 }
 
-export type IChannelEmittedEvent = IRecentMessagesUpdated | IHistoryMessagesUpdated | IConnectionStateUpdated | IIsLoadingMoreUpdated;
+export interface IShouldScrollToBottom {
+    event: ChannelEvents.ShouldScrollToBottom,
+    data: {}
+}
+
+export type IChannelEmittedEvent =
+    IRecentMessagesUpdated |
+    IHistoryMessagesUpdated |
+    IConnectionStateUpdated |
+    IIsLoadingMoreUpdated |
+    IShouldScrollToBottom;

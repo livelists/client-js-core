@@ -30,6 +30,7 @@ export class CustomEvents {
     }
 
     private onCustomEvent(data:CustomEvent) {
+        console.log('on custom event');
         this.emit({
             event: CustomEventsEmitEvents.NewCustomEvent,
             data,

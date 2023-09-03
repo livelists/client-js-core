@@ -16,7 +16,8 @@ import {
     IHistoryMessagesUpdated,
     IConnectionStateUpdated,
     IChannelEmittedEvent,
-    IIsLoadingMoreUpdated
+    IIsLoadingMoreUpdated,
+    IShouldScrollToBottom,
 } from './services/channel/const/EmittedEvents';
 import {
     ChannelsAggregation,
@@ -54,6 +55,7 @@ import {
 } from './types/channel.types';
 import {
     ILoadChannelsArgs,
+    IShortChannelData,
 } from './types/channelsAggregation.types';
 import {
     CustomData,
@@ -96,5 +98,7 @@ export {
     ChannelWithMsg,
     ShortChannel,
     ChannelsAggregationEvents,
-    IChannelsListUpdated
+    IChannelsListUpdated,
+    IShouldScrollToBottom,
+    IShortChannelData,
 };

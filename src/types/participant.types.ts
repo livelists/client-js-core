@@ -10,6 +10,7 @@ export interface ILocalParticipantArgs {
 }
 
 export interface IChannelParticipantsArgs {
+    channelId: string,
     socket: WSConnector,
     emitter: EventEmitter,
 }

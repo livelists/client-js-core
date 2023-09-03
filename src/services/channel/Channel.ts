@@ -20,11 +20,13 @@ export class Channel {
         initialOffset,
         initialPageSize,
         socket,
+        channelId,
     }:IChannelArgs) {
         this.initialOffset = initialOffset;
         this.initialPageSize = initialPageSize;
         this.emitter = new EventEmitter();
         this.socket = socket;
+        this.channelId = channelId;
     }
 
     private emitter:EventEmitter;
@@ -32,6 +34,8 @@ export class Channel {
     private initialPageSize:number;
 
     private initialOffset:number;
+
+    private channelId:string;
 
     private socket:WSConnector;
 
@@ -42,8 +46,6 @@ export class Channel {
     }
 
     public connectionState:ConnectionState = ConnectionStates.Disconnected;
-
-    public channelId:string|undefined = undefined;
 
     private recentMessages:LocalMessage[] = [];
 
@@ -59,6 +61,7 @@ export class Channel {
 
     public async join () {
         this.channelParticipants = new ChannelParticipants({
+            channelId: this.channelId,
             socket: this.socket,
             emitter: this.emitter,
         });
@@ -78,6 +81,7 @@ export class Channel {
                 this.socket.publishMessage({
                     $case: OutBoundWsEvents.JoinChannel,
                     [OutBoundWsEvents.JoinChannel]: {
+                        channelId: this.channelId,
                         initialPageSize: this.initialPageSize,
                         initialOffset: this.initialOffset,
                     }
@@ -106,8 +110,13 @@ export class Channel {
             throw new MyLocalParticipantNotExistError();
         }
         const localMessage = new LocalMessage({
-            message: args,
+            message: {
+                channelIdentifier: this.channelId,
+                text: args.text,
+                customData: args.customData,
+            },
             meLocalParticipant: this.localParticipant,
+            channelId: this.channelId,
         });
 
         this.recentMessages = [...this.recentMessages, localMessage];
@@ -116,6 +125,8 @@ export class Channel {
             $case: OutBoundWsEvents.SendMessage,
             [OutBoundWsEvents.SendMessage]: localMessage.getMessageForSending(),
         });
+
+        this.emitShouldScrollBottom();
     }
 
     public loadMoreMessages(args:ILoadMoreMessagesArgs) {
@@ -129,9 +140,10 @@ export class Channel {
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.LoadMoreMessages,
             [OutBoundWsEvents.LoadMoreMessages]: {
-                PageSize: args.pageSize,
-                FirstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
-                SkipFromFirstLoaded: args.skipFromFirstLoaded,
+                channelId: this.channelId,
+                pageSize: args.pageSize,
+                firstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
+                skipFromFirstLoaded: args.skipFromFirstLoaded,
             }
         });
 
@@ -149,6 +161,7 @@ export class Channel {
             (m) => new LocalMessage({
                 message: m,
                 meLocalParticipant: this.localParticipant as LocalParticipant,
+                channelId: this.channelId,
             })
         );
 
@@ -192,7 +205,7 @@ export class Channel {
     }
 
     private pushMessagesToHistoryList (localMessages:LocalMessage[]) {
-        this.historyMessages = [...localMessages, ...this.historyMessages];
+        this.historyMessages = [...localMessages, ...this.historyMessages].sort((a, b) => (a.message.message.createdAt?.getTime() || 0) - (b.message.message?.createdAt?.getTime() || 0));
         this.emit({
             event: ChannelEvents.HistoryMessagesUpdated,
             data: {
@@ -208,6 +221,7 @@ export class Channel {
         const localMessage = new LocalMessage({
             message: args,
             meLocalParticipant: this.localParticipant,
+            channelId: this.channelId,
         });
         this.pushMessageToRecentList(localMessage);
     }
@@ -231,11 +245,11 @@ export class Channel {
             args.channel?.historyMessages?.map((m) => new LocalMessage({
                 message: m,
                 meLocalParticipant: createdParticipant,
+                channelId: this.channelId,
             }));
         if (localMessages) {
             this.pushMessagesToHistoryList(localMessages);
         }
-        this.channelId = args.channel?.channelId;
         this.updateConnectionState(ConnectionStates.Connected);
     }
 
@@ -264,6 +278,13 @@ export class Channel {
             data: {
                 isLoadingMore,
             }
+        });
+    }
+
+    private emitShouldScrollBottom() {
+        this.emit({
+            event: ChannelEvents.ShouldScrollToBottom,
+            data: {}
         });
     }
 
