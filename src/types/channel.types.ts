@@ -5,6 +5,7 @@ export interface IChannelArgs {
     initialPageSize: number,
     initialOffset: number,
     socket: WSConnector,
+    channelId: string,
 }
 
 export interface IPublishMessageArgs {

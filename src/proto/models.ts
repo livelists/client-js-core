@@ -159,6 +159,7 @@ export interface Message {
   id: string;
   sender?: ParticipantShortInfo | undefined;
   text: string;
+  channelIdentifier: string;
   type: MessageType;
   subType: MessageSubType;
   localId: string;
@@ -347,6 +348,7 @@ function createBaseMessage(): Message {
     id: "",
     sender: undefined,
     text: "",
+    channelIdentifier: "",
     type: 0,
     subType: 0,
     localId: "",
@@ -366,20 +368,23 @@ export const Message = {
     if (message.text !== "") {
       writer.uint32(26).string(message.text);
     }
+    if (message.channelIdentifier !== "") {
+      writer.uint32(34).string(message.channelIdentifier);
+    }
     if (message.type !== 0) {
-      writer.uint32(32).int32(message.type);
+      writer.uint32(40).int32(message.type);
     }
     if (message.subType !== 0) {
-      writer.uint32(40).int32(message.subType);
+      writer.uint32(48).int32(message.subType);
     }
     if (message.localId !== "") {
-      writer.uint32(50).string(message.localId);
+      writer.uint32(58).string(message.localId);
     }
     if (message.customData !== undefined) {
-      CustomData.encode(message.customData, writer.uint32(58).fork()).ldelim();
+      CustomData.encode(message.customData, writer.uint32(66).fork()).ldelim();
     }
     if (message.createdAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(66).fork()).ldelim();
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(74).fork()).ldelim();
     }
     return writer;
   },
@@ -401,18 +406,21 @@ export const Message = {
           message.text = reader.string();
           break;
         case 4:
-          message.type = reader.int32() as any;
+          message.channelIdentifier = reader.string();
           break;
         case 5:
-          message.subType = reader.int32() as any;
+          message.type = reader.int32() as any;
           break;
         case 6:
-          message.localId = reader.string();
+          message.subType = reader.int32() as any;
           break;
         case 7:
-          message.customData = CustomData.decode(reader, reader.uint32());
+          message.localId = reader.string();
           break;
         case 8:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        case 9:
           message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         default:
@@ -428,6 +436,7 @@ export const Message = {
       id: isSet(object.id) ? String(object.id) : "",
       sender: isSet(object.sender) ? ParticipantShortInfo.fromJSON(object.sender) : undefined,
       text: isSet(object.text) ? String(object.text) : "",
+      channelIdentifier: isSet(object.channelIdentifier) ? String(object.channelIdentifier) : "",
       type: isSet(object.type) ? messageTypeFromJSON(object.type) : 0,
       subType: isSet(object.subType) ? messageSubTypeFromJSON(object.subType) : 0,
       localId: isSet(object.localId) ? String(object.localId) : "",
@@ -442,6 +451,7 @@ export const Message = {
     message.sender !== undefined &&
       (obj.sender = message.sender ? ParticipantShortInfo.toJSON(message.sender) : undefined);
     message.text !== undefined && (obj.text = message.text);
+    message.channelIdentifier !== undefined && (obj.channelIdentifier = message.channelIdentifier);
     message.type !== undefined && (obj.type = messageTypeToJSON(message.type));
     message.subType !== undefined && (obj.subType = messageSubTypeToJSON(message.subType));
     message.localId !== undefined && (obj.localId = message.localId);
@@ -462,6 +472,7 @@ export const Message = {
       ? ParticipantShortInfo.fromPartial(object.sender)
       : undefined;
     message.text = object.text ?? "";
+    message.channelIdentifier = object.channelIdentifier ?? "";
     message.type = object.type ?? 0;
     message.subType = object.subType ?? 0;
     message.localId = object.localId ?? "";

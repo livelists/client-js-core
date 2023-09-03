@@ -7,4 +7,5 @@ export interface ILocalShortChannelArgs {
     socket: WSConnector,
     emitter: EventEmitter,
     channel: ChannelWithMsg,
+    messagesLimit: number | undefined,
 }

@@ -32,7 +32,10 @@ export class ChannelsAggregation {
 
     private channels:LocalShortChannel[] = [];
 
+    private messagesLimit:number|undefined;
+
     public loadMyChannels(args:ILoadChannelsArgs) {
+        this.messagesLimit = args.messagesLimit;
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.LoadChannelsWithMsgReq,
             [OutBoundWsEvents.LoadChannelsWithMsgReq]: {
@@ -46,6 +49,7 @@ export class ChannelsAggregation {
             socket: this.socket as WSConnector,
             emitter: this.emitter,
             channel: c,
+            messagesLimit: this.messagesLimit,
         }));
 
         this.emitChannelsListUpdated();

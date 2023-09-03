@@ -1,3 +1,4 @@
+import { ChannelWithMsg } from '../proto/events';
 import { WSConnector } from '../socket/WSConnector';
 
 export interface IChannelsAggregationArgs {
@@ -6,4 +7,9 @@ export interface IChannelsAggregationArgs {
 
 export interface ILoadChannelsArgs {
     messagesLimit: number,
+}
+
+export interface IShortChannelData {
+    channel: ChannelWithMsg,
+    unreadCount: number
 }
