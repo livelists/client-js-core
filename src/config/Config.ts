@@ -1,4 +1,6 @@
-class Config {
+import { UrlParseError } from './errors';
+
+export class Config {
     url: string = '';
 
     accessToken: string = '';
@@ -9,7 +11,7 @@ class Config {
         } else if (url.startsWith('http')) {
             this.url = url.replace('http', 'ws');
         } else {
-            this.url = url;
+            throw new UrlParseError('Url should contain http or https protocol');
         }
     }
 
@@ -18,4 +20,4 @@ class Config {
     }
 }
 
-export = new Config();
+export const ConfigInstance = new Config();

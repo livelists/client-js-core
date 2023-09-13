@@ -4,7 +4,7 @@ import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEven
 import { logger } from '../../config/logger';
 import { LoadMoreMessagesRes, MeJoinedToChannel } from '../../proto/events';
 import { ChannelParticipantGrants, Message as MessagePB } from '../../proto/models';
-import { WSConnector } from '../../socket/WSConnector';
+import { IWsConnector } from '../../socket/WSConnector';
 import { IChannelArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
 import { CustomData, IOnEvent } from '../../types/common.types';
 import { CustomEvents } from '../customEvents/CustomEvents';
@@ -37,7 +37,7 @@ export class Channel {
 
     private channelId:string;
 
-    private socket:WSConnector;
+    private socket:IWsConnector;
 
     private localParticipant:LocalParticipant|undefined;
 
@@ -60,6 +60,13 @@ export class Channel {
     public customEvents:CustomEvents|undefined;
 
     public async join () {
+        this.updateConnectionState(ConnectionStates.Connecting);
+
+        if (!this.socket.isConnected) {
+            this.updateConnectionState(ConnectionStates.ConnectionError);
+            return;
+        }
+        
         this.channelParticipants = new ChannelParticipants({
             channelId: this.channelId,
             socket: this.socket,
@@ -70,41 +77,36 @@ export class Channel {
             socket: this.socket,
             emitter: this.emitter,
         });
+            
+        try {
+            this.socket.publishMessage({
+                $case: OutBoundWsEvents.JoinChannel,
+                [OutBoundWsEvents.JoinChannel]: {
+                    channelId: this.channelId,
+                    initialPageSize: this.initialPageSize,
+                    initialOffset: this.initialOffset,
+                }
+            });
 
-        this.updateConnectionState(ConnectionStates.Connecting);
-
-        if (!this.socket.isConnected) {
+            this.socket.subscribe({
+                event: InBoundWsEvents.NewMessage,
+                cb: this.onNewMessage.bind(this),
+            });
+            this.socket.subscribe({
+                event: InBoundWsEvents.MeJoinedToChannel,
+                cb: this.onMeJoinedToChannel.bind(this)
+            });
+            this.socket.subscribe({
+                event: InBoundWsEvents.LoadMoreMessagesRes,
+                cb: this.onLoadMoreMessagesRes.bind(this)
+            });
+        } catch (e) {
+            logger.error('Channel connection error');
             this.updateConnectionState(ConnectionStates.ConnectionError);
         }
-        if (this.socket.isConnected)
-            try {
-                this.socket.publishMessage({
-                    $case: OutBoundWsEvents.JoinChannel,
-                    [OutBoundWsEvents.JoinChannel]: {
-                        channelId: this.channelId,
-                        initialPageSize: this.initialPageSize,
-                        initialOffset: this.initialOffset,
-                    }
-                });
-
-                this.socket.subscribe({
-                    event: InBoundWsEvents.NewMessage,
-                    cb: this.onNewMessage.bind(this),
-                });
-                this.socket.subscribe({
-                    event: InBoundWsEvents.MeJoinedToChannel,
-                    cb: this.onMeJoinedToChannel.bind(this)
-                });
-                this.socket.subscribe({
-                    event: InBoundWsEvents.LoadMoreMessagesRes,
-                    cb: this.onLoadMoreMessagesRes.bind(this)
-                });
-            } catch (e) {
-                logger.error('Channel connection error');
-                this.updateConnectionState(ConnectionStates.ConnectionError);
-            }
     }
 
+    //ToDO: create buffer for publish before connect (or in disconnect)
     public async publishMessage(args:IPublishMessageArgs) {
         if (!this.localParticipant) {
             throw new MyLocalParticipantNotExistError();
@@ -120,6 +122,7 @@ export class Channel {
         });
 
         this.recentMessages = [...this.recentMessages, localMessage];
+        this.incrementMessagesTotalCount();
 
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.SendMessage,
@@ -192,6 +195,7 @@ export class Channel {
 
         if (sentMessageIndex === -1) {
             this.recentMessages = [...this.recentMessages, localMessage];
+            this.incrementMessagesTotalCount();
         } else {
             const mySentMessageCopy = this.recentMessages[sentMessageIndex];
             mySentMessageCopy.message.localMeta.isAck = true;
@@ -252,6 +256,10 @@ export class Channel {
         }
         this.updateConnectionState(ConnectionStates.Connected);
     }
+
+    private incrementMessagesTotalCount = () => {
+        this.messagesTotalCount = (this.messagesTotalCount || 0) + 1;
+    };
 
     private updateConnectionState(connectionState:ConnectionState) {
         this.connectionState = connectionState;

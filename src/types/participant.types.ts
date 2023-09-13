@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 import { ChannelParticipantGrants } from '../proto/models';
-import { WSConnector } from '../socket/WSConnector';
+import {IWsConnector, WSConnector} from '../socket/WSConnector';
 import { CustomData } from './common.types';
 export interface ILocalParticipantArgs {
     identifier: string,
@@ -11,6 +11,6 @@ export interface ILocalParticipantArgs {
 
 export interface IChannelParticipantsArgs {
     channelId: string,
-    socket: WSConnector,
+    socket: IWsConnector,
     emitter: EventEmitter,
 }

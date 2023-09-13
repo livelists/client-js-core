@@ -1,10 +1,10 @@
-import { WSConnector } from '../socket/WSConnector';
+import {IWsConnector, WSConnector} from '../socket/WSConnector';
 import { CustomData } from './common.types';
 
 export interface IChannelArgs {
     initialPageSize: number,
     initialOffset: number,
-    socket: WSConnector,
+    socket: IWsConnector,
     channelId: string,
 }
 
