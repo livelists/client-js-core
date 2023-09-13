@@ -122,6 +122,7 @@ export class Channel {
         });
 
         this.recentMessages = [...this.recentMessages, localMessage];
+        this.incrementMessagesTotalCount();
 
         this.socket?.publishMessage({
             $case: OutBoundWsEvents.SendMessage,
@@ -194,6 +195,7 @@ export class Channel {
 
         if (sentMessageIndex === -1) {
             this.recentMessages = [...this.recentMessages, localMessage];
+            this.incrementMessagesTotalCount();
         } else {
             const mySentMessageCopy = this.recentMessages[sentMessageIndex];
             mySentMessageCopy.message.localMeta.isAck = true;
@@ -254,6 +256,10 @@ export class Channel {
         }
         this.updateConnectionState(ConnectionStates.Connected);
     }
+
+    private incrementMessagesTotalCount = () => {
+        this.messagesTotalCount = (this.messagesTotalCount || 0) + 1;
+    };
 
     private updateConnectionState(connectionState:ConnectionState) {
         this.connectionState = connectionState;

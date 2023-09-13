@@ -1,14 +1,28 @@
-import {Channel, ConnectionStates, Message as MessagePB, ParticipantShortInfo} from '../../../src';
+import {Channel, ConnectionStates, Message, Message as MessagePB, ParticipantShortInfo} from '../../../src';
 import { FakeWSConnector, IFakeWsConnect } from '../../WsConnector.fake';
 import {InBoundWsEvents} from "../../../src/common/const/SocketEvents";
 import {CustomData, MessageSubType, MessageType} from "../../../src/proto/models";
-import {MyLocalParticipantNotExistError} from "../../../src/services/channel/errors";
+import {LoadMoreMessagesError, MyLocalParticipantNotExistError} from "../../../src/services/channel/errors";
 
+const ME_PARTICIPANT_ID = 'meParticipantId';
 
 const FAKE_MESSAGE:MessagePB = {
     id: 'fakeId',
     text: 'text',
     channelIdentifier: 'fakeId',
+    type: MessageType.ParticipantCreated,
+    subType: MessageSubType.TextMessage,
+    localId: 'localId',
+}
+
+const FAKE_MY_MESSAGE:MessagePB = {
+    id: 'fakeId',
+    text: 'text',
+    channelIdentifier: 'fakeId',
+    sender: {
+        identifier: ME_PARTICIPANT_ID,
+        isOnline: false,
+    },
     type: MessageType.ParticipantCreated,
     subType: MessageSubType.TextMessage,
     localId: 'localId',
@@ -158,7 +172,7 @@ describe('After join channel response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     me: {
-                        identifier: 'fakeId',
+                        identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
                 }
@@ -176,7 +190,7 @@ describe('After join channel response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     me: {
-                        identifier: 'fakeId',
+                        identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
                     channel: {
@@ -209,7 +223,7 @@ describe('After join channel response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     me: {
-                        identifier: 'fakeId',
+                        identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
                     channel: {
@@ -232,7 +246,7 @@ describe('After join channel response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     me: {
-                        identifier: 'fakeId',
+                        identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
                     channel: {
@@ -283,7 +297,7 @@ describe('After message publish', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     me: {
-                        identifier: 'fakeId',
+                        identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
                 }
@@ -333,7 +347,10 @@ describe('After message publish response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
-                }
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
             }
         })
 
@@ -344,10 +361,11 @@ describe('After message publish response', () => {
 
         await channel.publishMessage(newMessageData);
 
-        await channel['onNewMessage'](FAKE_MESSAGE);
+        channel['onNewMessage'](FAKE_MY_MESSAGE);
 
-        const oldMessage = channel['recentMessages'].find((m) => m.message.message.id === FAKE_MESSAGE.id)
-        expect(oldMessage?.message?.localMeta?.isAck).toBeTruthy()
+        const oldMessage = channel['recentMessages'].find((m) => m.message.message.localId === FAKE_MESSAGE.localId)
+        expect(oldMessage?.message?.localMeta?.isAck).toBeTruthy();
+        expect(channel['recentMessages'].length).toBe(1);
     });
 });
 
@@ -377,6 +395,9 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 10,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
                     }
                 },
             }
@@ -399,6 +420,9 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
                     }
                 },
             }
@@ -411,7 +435,7 @@ describe('After call load more messages', () => {
         expect(channel['isLoadingMore']).toBeFalsy();
     })
 
-    it('should not set is loading if already all loaded from history and recent', async () => {
+    it('should set is loading if total count incremented by foreign message', async () => {
         await wsConnector.sendMessageFake({
             message: {
                 $case: "meJoinedToChannel",
@@ -421,6 +445,9 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
                     }
                 },
             }
@@ -432,6 +459,205 @@ describe('After call load more messages', () => {
             pageSize: 10,
             skipFromFirstLoaded: 0,
         });
-        expect(channel['isLoadingMore']).toBeFalsy();
+        expect(channel['isLoadingMore']).toBeTruthy();
+    });
+});
+
+describe('Messages total count', () => {
+    let channel:Channel;
+    let wsConnector:IFakeWsConnect;
+
+    beforeEach(async () => {
+        wsConnector = new FakeWSConnector();
+        wsConnector.isConnected = true;
+        channel = new Channel({
+            initialOffset: 1,
+            initialPageSize: 1,
+            socket: wsConnector,
+            channelId: 'channelId',
+        });
+        channel.join();
+    });
+
+    it('should set count from response', async () => {
+        const TOTAL_COUNT = 10;
+
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    channel: {
+                        channelId: "fakeChannelId",
+                        historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
+                        totalMessages: TOTAL_COUNT,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+
+        expect(channel['messagesTotalCount']).toBe(TOTAL_COUNT);
+    });
+
+    it('should increment after me message publish (before received response)', async () => {
+        const TOTAL_COUNT = 10;
+
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    channel: {
+                        channelId: "fakeChannelId",
+                        historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
+                        totalMessages: TOTAL_COUNT,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+
+        const newMessageData = {
+            text: "str2",
+            customData: {}
+        }
+
+        await channel.publishMessage(newMessageData);
+
+        expect(channel['messagesTotalCount']).toBe(TOTAL_COUNT + 1);
+    });
+
+    it('should increment if foreign message received', async () => {
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+
+        await channel['onNewMessage'](FAKE_MESSAGE);
+
+        expect(channel['messagesTotalCount']).toBe(1)
+    });
+
+    it('should not double increment if my message response received', async () => {
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+
+        const newMessageData = {
+            text: "str2",
+            customData: {}
+        }
+
+        await channel.publishMessage(newMessageData);
+
+        const newMessageLocalId = channel['recentMessages'][0].message.message.localId;
+
+        const myFakeMessageWithCurrentLocalId = {
+            ...FAKE_MY_MESSAGE,
+            localId: newMessageLocalId,
+        }
+        await channel['onNewMessage'](myFakeMessageWithCurrentLocalId);
+
+        expect(channel['messagesTotalCount']).toBe(1)
+    });
+});
+
+
+describe('After load messages response', () => {
+    let channel:Channel;
+    let wsConnector:IFakeWsConnect;
+    const TOTAL_COUNT = 10;
+
+    beforeEach(async () => {
+        wsConnector = new FakeWSConnector();
+        wsConnector.isConnected = true;
+        channel = new Channel({
+            initialOffset: 1,
+            initialPageSize: 1,
+            socket: wsConnector,
+            channelId: 'channelId',
+        });
+        channel.join();
+
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    channel: {
+                        channelId: "fakeChannelId",
+                        historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
+                        totalMessages: TOTAL_COUNT,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+    });
+
+    it('should throw error if not success', () => {
+        expect(() => channel['onLoadMoreMessagesRes']({
+            isSuccess: false,
+            totalMessages: 0,
+            messages: [],
+        })).toThrow(LoadMoreMessagesError)
+    });
+
+    it('should set total messages count from response if success', () => {
+        const MESSAGES_TOTAL_COUNT = 12;
+
+        channel['onLoadMoreMessagesRes']({
+            isSuccess: true,
+            totalMessages: MESSAGES_TOTAL_COUNT,
+            messages: [],
+        });
+
+        expect(channel['messagesTotalCount']).toBe(MESSAGES_TOTAL_COUNT)
+    });
+
+    it('should set is loading more to false if success', () => {
+        channel['onLoadMoreMessagesRes']({
+            isSuccess: true,
+            totalMessages: 2,
+            messages: [],
+        });
+
+        expect(channel['isLoadingMore']).toBe(false)
+    });
+
+    it('should push messages to history list', () => {
+        const tempHistoryMessagesLength = channel['historyMessages'].length;
+
+        const responseMessages = [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE];
+
+        channel['onLoadMoreMessagesRes']({
+            isSuccess: true,
+            totalMessages: 2,
+            messages: responseMessages,
+        });
+
+        expect(channel['historyMessages'].length).toBe(tempHistoryMessagesLength + responseMessages.length)
     });
 });
