@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { InBoundWsEvents } from '../../common/const/SocketEvents';
 import { ChannelWithMsg } from '../../proto/events';
 import { Message as MessagePB } from '../../proto/models';
-import { WSConnector } from '../../socket/WSConnector';
+import { IWsConnector } from '../../socket/WSConnector';
 import { IShortChannelData } from '../../types/channelsAggregation.types';
 import { ILocalShortChannelArgs } from '../../types/localShortChannel.types';
 
@@ -35,7 +35,7 @@ export class LocalShortChannel {
         unreadCount
     }:IShortChannelData) => void) | undefined;
 
-    private socket:WSConnector|undefined;
+    private socket:IWsConnector|undefined;
 
     public unreadCount:number = 0;
 

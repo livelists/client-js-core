@@ -1,5 +1,5 @@
 import { InBoundWsEvents } from '../common/const/SocketEvents';
-import Config from '../config/Config';
+import { ConfigInstance } from '../config/Config';
 import { logger } from '../config/logger';
 import {
     InBoundMessage,
@@ -11,7 +11,15 @@ import { IOpenConnectionArgs, ISubscribeArgs } from '../types/websocket.types';
 type OutBoundMessageData = OutBoundMessage['message']
 
 
-export class WSConnector {
+export interface IWsConnector {
+    isConnected:boolean,
+    openConnection: (args:IOpenConnectionArgs) => Promise<void|InBoundMessage>,
+    publishMessage: (message:OutBoundMessageData) => void,
+    subscribe: (args:ISubscribeArgs) => void,
+    unSubscribe: (args:ISubscribeArgs) => void,
+}
+
+export class WSConnector implements  IWsConnector {
     private ws?:WebSocket;
 
     public isConnected:boolean = false;
@@ -34,12 +42,12 @@ export class WSConnector {
         logger.error('websocket error', ev);
     }
 
-    public openConnection (args:IOpenConnectionArgs) {
-        Config.setUrl(args.url);
-        Config.setAccessToken(args.authToken);
+    public openConnection (args:IOpenConnectionArgs):Promise<void|InBoundMessage> {
+        ConfigInstance.setUrl(args.url);
+        ConfigInstance.setAccessToken(args.authToken);
 
         logger.info('open connection');
-        logger.info(Config.url);
+        logger.info(ConfigInstance.url);
 
         this.ws = undefined;
         const ws = new WebSocket(`${args.url}/?accessToken=${args.authToken}`);

@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
 import { LoadParticipantsRes, ParticipantBecameOffline, ParticipantBecameOnline, } from '../../proto/events';
 import { ParticipantShortInfo } from '../../proto/models';
-import { WSConnector } from '../../socket/WSConnector';
+import { IWsConnector } from '../../socket/WSConnector';
 import { IOnEvent } from '../../types/common.types';
 import { IChannelParticipantsArgs } from '../../types/participant.types';
 import { ChannelParticipantsEvents, IChannelParticipantsEmittedEvent } from './const/EmittedEvents';
@@ -34,7 +34,7 @@ export class ChannelParticipants {
 
     private participantsList:ParticipantShortInfo[] = [];
     
-    private socket:WSConnector|undefined;
+    private socket:IWsConnector|undefined;
 
     private emitter:EventEmitter;
 

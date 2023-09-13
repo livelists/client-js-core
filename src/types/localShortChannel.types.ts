@@ -1,10 +1,10 @@
 import { EventEmitter } from 'events';
 
 import { ChannelWithMsg } from '../proto/events';
-import { WSConnector } from '../socket/WSConnector';
+import {IWsConnector, WSConnector} from '../socket/WSConnector';
 
 export interface ILocalShortChannelArgs {
-    socket: WSConnector,
+    socket: IWsConnector,
     emitter: EventEmitter,
     channel: ChannelWithMsg,
     messagesLimit: number | undefined,

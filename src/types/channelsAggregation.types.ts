@@ -1,8 +1,8 @@
 import { ChannelWithMsg } from '../proto/events';
-import { WSConnector } from '../socket/WSConnector';
+import {IWsConnector, WSConnector} from '../socket/WSConnector';
 
 export interface IChannelsAggregationArgs {
-    socket: WSConnector,
+    socket: IWsConnector,
 }
 
 export interface ILoadChannelsArgs {

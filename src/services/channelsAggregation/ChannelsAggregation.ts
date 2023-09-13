@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
 import { LoadChannelsWithMsgRes } from '../../proto/events';
-import { WSConnector } from '../../socket/WSConnector';
+import { IWsConnector, WSConnector } from '../../socket/WSConnector';
 import { IChannelsAggregationArgs, ILoadChannelsArgs, } from '../../types/channelsAggregation.types';
 import { IOnEvent } from '../../types/common.types';
 import { ChannelsAggregationEvents, IChannelsAggregationEmittedEvent, } from './const/EmittedEvents';
@@ -28,7 +28,7 @@ export class ChannelsAggregation {
         this.emitter?.emit(event.event, event.data);
     }
     
-    private socket:WSConnector|undefined;
+    private socket:IWsConnector|undefined;
 
     private channels:LocalShortChannel[] = [];
 
