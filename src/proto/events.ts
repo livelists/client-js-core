@@ -20,7 +20,8 @@ export interface OutBoundMessage {
     | { $case: "loadMoreMessages"; loadMoreMessages: LoadMoreMessages }
     | { $case: "loadParticipantsReq"; loadParticipantsReq: LoadParticipantsReq }
     | { $case: "sendCustomEvent"; sendCustomEvent: CustomEvent }
-    | { $case: "loadChannelsWithMsgReq"; loadChannelsWithMsgReq: LoadChannelsWithMsgReq };
+    | { $case: "loadChannelsWithMsgReq"; loadChannelsWithMsgReq: LoadChannelsWithMsgReq }
+    | { $case: "updateLastSeenMessageAtReq"; updateLastSeenMessageAtReq: UpdateLastSeenMessageAtReq };
 }
 
 export interface InBoundMessage {
@@ -32,7 +33,9 @@ export interface InBoundMessage {
     | { $case: "participantBecameOffline"; participantBecameOffline: ParticipantBecameOffline }
     | { $case: "loadParticipantsRes"; loadParticipantsRes: LoadParticipantsRes }
     | { $case: "newCustomEvent"; newCustomEvent: CustomEvent }
-    | { $case: "loadChannelsWithMsgRes"; loadChannelsWithMsgRes: LoadChannelsWithMsgRes };
+    | { $case: "loadChannelsWithMsgRes"; loadChannelsWithMsgRes: LoadChannelsWithMsgRes }
+    | { $case: "channelLastSeenMessageUpdated"; channelLastSeenMessageUpdated: ChannelLastSeenMessageUpdated }
+    | { $case: "updateLastSeenMessageAtRes"; updateLastSeenMessageAtRes: UpdateLastSeenMessageAtRes };
 }
 
 export interface SendMessage {
@@ -51,6 +54,10 @@ export interface JoinChannel {
 export interface ChannelInitialInfo {
   channelId: string;
   totalMessages: number;
+  firstMessageCreatedAt?: Date;
+  lastMessageCreatedAt?: Date;
+  notSeenMessagesCount: number;
+  lastSeenMessageCreatedAt?: Date;
   historyMessages: Message[];
 }
 
@@ -70,6 +77,7 @@ export interface LoadMoreMessages {
   channelId: string;
   pageSize: number;
   firstLoadedCreatedAt?: Date | undefined;
+  isLoadOlder: boolean;
   skipFromFirstLoaded: number;
 }
 
@@ -83,6 +91,8 @@ export interface LoadMoreMessagesRes {
   requestInfo?: LoadMoreMessagesRequestInfo;
   isSuccess: boolean;
   totalMessages: number;
+  firstMessageCreatedAt?: Date;
+  lastMessageCreatedAt?: Date;
   messages: Message[];
 }
 
@@ -111,11 +121,27 @@ export interface LoadChannelsWithMsgReq {
 
 export interface ChannelWithMsg {
   channel?: ShortChannel;
+  notSeenMessagesCount: number;
   messages: Message[];
 }
 
 export interface LoadChannelsWithMsgRes {
   channels: ChannelWithMsg[];
+}
+
+export interface UpdateLastSeenMessageAtReq {
+  channelId: string;
+  lastSeenAt?: Date;
+}
+
+export interface UpdateLastSeenMessageAtRes {
+  channelId: string;
+  lastSeenAt?: Date;
+}
+
+export interface ChannelLastSeenMessageUpdated {
+  channelId: string;
+  lastSeenAt?: Date;
 }
 
 function createBaseOutBoundMessage(): OutBoundMessage {
@@ -142,6 +168,10 @@ export const OutBoundMessage = {
         break;
       case "loadChannelsWithMsgReq":
         LoadChannelsWithMsgReq.encode(message.message.loadChannelsWithMsgReq, writer.uint32(50).fork()).ldelim();
+        break;
+      case "updateLastSeenMessageAtReq":
+        UpdateLastSeenMessageAtReq.encode(message.message.updateLastSeenMessageAtReq, writer.uint32(58).fork())
+          .ldelim();
         break;
     }
     return writer;
@@ -181,6 +211,12 @@ export const OutBoundMessage = {
             loadChannelsWithMsgReq: LoadChannelsWithMsgReq.decode(reader, reader.uint32()),
           };
           break;
+        case 7:
+          message.message = {
+            $case: "updateLastSeenMessageAtReq",
+            updateLastSeenMessageAtReq: UpdateLastSeenMessageAtReq.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -209,6 +245,11 @@ export const OutBoundMessage = {
           $case: "loadChannelsWithMsgReq",
           loadChannelsWithMsgReq: LoadChannelsWithMsgReq.fromJSON(object.loadChannelsWithMsgReq),
         }
+        : isSet(object.updateLastSeenMessageAtReq)
+        ? {
+          $case: "updateLastSeenMessageAtReq",
+          updateLastSeenMessageAtReq: UpdateLastSeenMessageAtReq.fromJSON(object.updateLastSeenMessageAtReq),
+        }
         : undefined,
     };
   },
@@ -231,6 +272,10 @@ export const OutBoundMessage = {
     message.message?.$case === "loadChannelsWithMsgReq" &&
       (obj.loadChannelsWithMsgReq = message.message?.loadChannelsWithMsgReq
         ? LoadChannelsWithMsgReq.toJSON(message.message?.loadChannelsWithMsgReq)
+        : undefined);
+    message.message?.$case === "updateLastSeenMessageAtReq" &&
+      (obj.updateLastSeenMessageAtReq = message.message?.updateLastSeenMessageAtReq
+        ? UpdateLastSeenMessageAtReq.toJSON(message.message?.updateLastSeenMessageAtReq)
         : undefined);
     return obj;
   },
@@ -295,6 +340,16 @@ export const OutBoundMessage = {
         loadChannelsWithMsgReq: LoadChannelsWithMsgReq.fromPartial(object.message.loadChannelsWithMsgReq),
       };
     }
+    if (
+      object.message?.$case === "updateLastSeenMessageAtReq" &&
+      object.message?.updateLastSeenMessageAtReq !== undefined &&
+      object.message?.updateLastSeenMessageAtReq !== null
+    ) {
+      message.message = {
+        $case: "updateLastSeenMessageAtReq",
+        updateLastSeenMessageAtReq: UpdateLastSeenMessageAtReq.fromPartial(object.message.updateLastSeenMessageAtReq),
+      };
+    }
     return message;
   },
 };
@@ -329,6 +384,14 @@ export const InBoundMessage = {
         break;
       case "loadChannelsWithMsgRes":
         LoadChannelsWithMsgRes.encode(message.message.loadChannelsWithMsgRes, writer.uint32(66).fork()).ldelim();
+        break;
+      case "channelLastSeenMessageUpdated":
+        ChannelLastSeenMessageUpdated.encode(message.message.channelLastSeenMessageUpdated, writer.uint32(74).fork())
+          .ldelim();
+        break;
+      case "updateLastSeenMessageAtRes":
+        UpdateLastSeenMessageAtRes.encode(message.message.updateLastSeenMessageAtRes, writer.uint32(82).fork())
+          .ldelim();
         break;
     }
     return writer;
@@ -383,6 +446,18 @@ export const InBoundMessage = {
             loadChannelsWithMsgRes: LoadChannelsWithMsgRes.decode(reader, reader.uint32()),
           };
           break;
+        case 9:
+          message.message = {
+            $case: "channelLastSeenMessageUpdated",
+            channelLastSeenMessageUpdated: ChannelLastSeenMessageUpdated.decode(reader, reader.uint32()),
+          };
+          break;
+        case 10:
+          message.message = {
+            $case: "updateLastSeenMessageAtRes",
+            updateLastSeenMessageAtRes: UpdateLastSeenMessageAtRes.decode(reader, reader.uint32()),
+          };
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -424,6 +499,16 @@ export const InBoundMessage = {
           $case: "loadChannelsWithMsgRes",
           loadChannelsWithMsgRes: LoadChannelsWithMsgRes.fromJSON(object.loadChannelsWithMsgRes),
         }
+        : isSet(object.channelLastSeenMessageUpdated)
+        ? {
+          $case: "channelLastSeenMessageUpdated",
+          channelLastSeenMessageUpdated: ChannelLastSeenMessageUpdated.fromJSON(object.channelLastSeenMessageUpdated),
+        }
+        : isSet(object.updateLastSeenMessageAtRes)
+        ? {
+          $case: "updateLastSeenMessageAtRes",
+          updateLastSeenMessageAtRes: UpdateLastSeenMessageAtRes.fromJSON(object.updateLastSeenMessageAtRes),
+        }
         : undefined,
     };
   },
@@ -455,6 +540,14 @@ export const InBoundMessage = {
     message.message?.$case === "loadChannelsWithMsgRes" &&
       (obj.loadChannelsWithMsgRes = message.message?.loadChannelsWithMsgRes
         ? LoadChannelsWithMsgRes.toJSON(message.message?.loadChannelsWithMsgRes)
+        : undefined);
+    message.message?.$case === "channelLastSeenMessageUpdated" &&
+      (obj.channelLastSeenMessageUpdated = message.message?.channelLastSeenMessageUpdated
+        ? ChannelLastSeenMessageUpdated.toJSON(message.message?.channelLastSeenMessageUpdated)
+        : undefined);
+    message.message?.$case === "updateLastSeenMessageAtRes" &&
+      (obj.updateLastSeenMessageAtRes = message.message?.updateLastSeenMessageAtRes
+        ? UpdateLastSeenMessageAtRes.toJSON(message.message?.updateLastSeenMessageAtRes)
         : undefined);
     return obj;
   },
@@ -540,6 +633,28 @@ export const InBoundMessage = {
       message.message = {
         $case: "loadChannelsWithMsgRes",
         loadChannelsWithMsgRes: LoadChannelsWithMsgRes.fromPartial(object.message.loadChannelsWithMsgRes),
+      };
+    }
+    if (
+      object.message?.$case === "channelLastSeenMessageUpdated" &&
+      object.message?.channelLastSeenMessageUpdated !== undefined &&
+      object.message?.channelLastSeenMessageUpdated !== null
+    ) {
+      message.message = {
+        $case: "channelLastSeenMessageUpdated",
+        channelLastSeenMessageUpdated: ChannelLastSeenMessageUpdated.fromPartial(
+          object.message.channelLastSeenMessageUpdated,
+        ),
+      };
+    }
+    if (
+      object.message?.$case === "updateLastSeenMessageAtRes" &&
+      object.message?.updateLastSeenMessageAtRes !== undefined &&
+      object.message?.updateLastSeenMessageAtRes !== null
+    ) {
+      message.message = {
+        $case: "updateLastSeenMessageAtRes",
+        updateLastSeenMessageAtRes: UpdateLastSeenMessageAtRes.fromPartial(object.message.updateLastSeenMessageAtRes),
       };
     }
     return message;
@@ -701,7 +816,15 @@ export const JoinChannel = {
 };
 
 function createBaseChannelInitialInfo(): ChannelInitialInfo {
-  return { channelId: "", totalMessages: 0, historyMessages: [] };
+  return {
+    channelId: "",
+    totalMessages: 0,
+    firstMessageCreatedAt: undefined,
+    lastMessageCreatedAt: undefined,
+    notSeenMessagesCount: 0,
+    lastSeenMessageCreatedAt: undefined,
+    historyMessages: [],
+  };
 }
 
 export const ChannelInitialInfo = {
@@ -712,8 +835,20 @@ export const ChannelInitialInfo = {
     if (message.totalMessages !== 0) {
       writer.uint32(16).int64(message.totalMessages);
     }
+    if (message.firstMessageCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.firstMessageCreatedAt), writer.uint32(26).fork()).ldelim();
+    }
+    if (message.lastMessageCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastMessageCreatedAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.notSeenMessagesCount !== 0) {
+      writer.uint32(40).int64(message.notSeenMessagesCount);
+    }
+    if (message.lastSeenMessageCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenMessageCreatedAt), writer.uint32(50).fork()).ldelim();
+    }
     for (const v of message.historyMessages) {
-      Message.encode(v!, writer.uint32(26).fork()).ldelim();
+      Message.encode(v!, writer.uint32(58).fork()).ldelim();
     }
     return writer;
   },
@@ -732,6 +867,18 @@ export const ChannelInitialInfo = {
           message.totalMessages = longToNumber(reader.int64() as Long);
           break;
         case 3:
+          message.firstMessageCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 4:
+          message.lastMessageCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 5:
+          message.notSeenMessagesCount = longToNumber(reader.int64() as Long);
+          break;
+        case 6:
+          message.lastSeenMessageCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 7:
           message.historyMessages.push(Message.decode(reader, reader.uint32()));
           break;
         default:
@@ -746,6 +893,16 @@ export const ChannelInitialInfo = {
     return {
       channelId: isSet(object.channelId) ? String(object.channelId) : "",
       totalMessages: isSet(object.totalMessages) ? Number(object.totalMessages) : 0,
+      firstMessageCreatedAt: isSet(object.firstMessageCreatedAt)
+        ? fromJsonTimestamp(object.firstMessageCreatedAt)
+        : undefined,
+      lastMessageCreatedAt: isSet(object.lastMessageCreatedAt)
+        ? fromJsonTimestamp(object.lastMessageCreatedAt)
+        : undefined,
+      notSeenMessagesCount: isSet(object.notSeenMessagesCount) ? Number(object.notSeenMessagesCount) : 0,
+      lastSeenMessageCreatedAt: isSet(object.lastSeenMessageCreatedAt)
+        ? fromJsonTimestamp(object.lastSeenMessageCreatedAt)
+        : undefined,
       historyMessages: Array.isArray(object?.historyMessages)
         ? object.historyMessages.map((e: any) => Message.fromJSON(e))
         : [],
@@ -756,6 +913,13 @@ export const ChannelInitialInfo = {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
     message.totalMessages !== undefined && (obj.totalMessages = Math.round(message.totalMessages));
+    message.firstMessageCreatedAt !== undefined &&
+      (obj.firstMessageCreatedAt = message.firstMessageCreatedAt.toISOString());
+    message.lastMessageCreatedAt !== undefined &&
+      (obj.lastMessageCreatedAt = message.lastMessageCreatedAt.toISOString());
+    message.notSeenMessagesCount !== undefined && (obj.notSeenMessagesCount = Math.round(message.notSeenMessagesCount));
+    message.lastSeenMessageCreatedAt !== undefined &&
+      (obj.lastSeenMessageCreatedAt = message.lastSeenMessageCreatedAt.toISOString());
     if (message.historyMessages) {
       obj.historyMessages = message.historyMessages.map((e) => e ? Message.toJSON(e) : undefined);
     } else {
@@ -772,6 +936,10 @@ export const ChannelInitialInfo = {
     const message = createBaseChannelInitialInfo();
     message.channelId = object.channelId ?? "";
     message.totalMessages = object.totalMessages ?? 0;
+    message.firstMessageCreatedAt = object.firstMessageCreatedAt ?? undefined;
+    message.lastMessageCreatedAt = object.lastMessageCreatedAt ?? undefined;
+    message.notSeenMessagesCount = object.notSeenMessagesCount ?? 0;
+    message.lastSeenMessageCreatedAt = object.lastSeenMessageCreatedAt ?? undefined;
     message.historyMessages = object.historyMessages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
@@ -929,7 +1097,7 @@ export const MeJoinedToChannel = {
 };
 
 function createBaseLoadMoreMessages(): LoadMoreMessages {
-  return { channelId: "", pageSize: 0, firstLoadedCreatedAt: undefined, skipFromFirstLoaded: 0 };
+  return { channelId: "", pageSize: 0, firstLoadedCreatedAt: undefined, isLoadOlder: false, skipFromFirstLoaded: 0 };
 }
 
 export const LoadMoreMessages = {
@@ -943,8 +1111,11 @@ export const LoadMoreMessages = {
     if (message.firstLoadedCreatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.firstLoadedCreatedAt), writer.uint32(26).fork()).ldelim();
     }
+    if (message.isLoadOlder === true) {
+      writer.uint32(32).bool(message.isLoadOlder);
+    }
     if (message.skipFromFirstLoaded !== 0) {
-      writer.uint32(32).int32(message.skipFromFirstLoaded);
+      writer.uint32(40).int32(message.skipFromFirstLoaded);
     }
     return writer;
   },
@@ -966,6 +1137,9 @@ export const LoadMoreMessages = {
           message.firstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 4:
+          message.isLoadOlder = reader.bool();
+          break;
+        case 5:
           message.skipFromFirstLoaded = reader.int32();
           break;
         default:
@@ -983,6 +1157,7 @@ export const LoadMoreMessages = {
       firstLoadedCreatedAt: isSet(object.firstLoadedCreatedAt)
         ? fromJsonTimestamp(object.firstLoadedCreatedAt)
         : undefined,
+      isLoadOlder: isSet(object.isLoadOlder) ? Boolean(object.isLoadOlder) : false,
       skipFromFirstLoaded: isSet(object.skipFromFirstLoaded) ? Number(object.skipFromFirstLoaded) : 0,
     };
   },
@@ -993,6 +1168,7 @@ export const LoadMoreMessages = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.firstLoadedCreatedAt !== undefined &&
       (obj.firstLoadedCreatedAt = message.firstLoadedCreatedAt.toISOString());
+    message.isLoadOlder !== undefined && (obj.isLoadOlder = message.isLoadOlder);
     message.skipFromFirstLoaded !== undefined && (obj.skipFromFirstLoaded = Math.round(message.skipFromFirstLoaded));
     return obj;
   },
@@ -1006,6 +1182,7 @@ export const LoadMoreMessages = {
     message.channelId = object.channelId ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.firstLoadedCreatedAt = object.firstLoadedCreatedAt ?? undefined;
+    message.isLoadOlder = object.isLoadOlder ?? false;
     message.skipFromFirstLoaded = object.skipFromFirstLoaded ?? 0;
     return message;
   },
@@ -1086,7 +1263,14 @@ export const LoadMoreMessagesRequestInfo = {
 };
 
 function createBaseLoadMoreMessagesRes(): LoadMoreMessagesRes {
-  return { requestInfo: undefined, isSuccess: false, totalMessages: 0, messages: [] };
+  return {
+    requestInfo: undefined,
+    isSuccess: false,
+    totalMessages: 0,
+    firstMessageCreatedAt: undefined,
+    lastMessageCreatedAt: undefined,
+    messages: [],
+  };
 }
 
 export const LoadMoreMessagesRes = {
@@ -1100,8 +1284,14 @@ export const LoadMoreMessagesRes = {
     if (message.totalMessages !== 0) {
       writer.uint32(24).int64(message.totalMessages);
     }
+    if (message.firstMessageCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.firstMessageCreatedAt), writer.uint32(34).fork()).ldelim();
+    }
+    if (message.lastMessageCreatedAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastMessageCreatedAt), writer.uint32(42).fork()).ldelim();
+    }
     for (const v of message.messages) {
-      Message.encode(v!, writer.uint32(34).fork()).ldelim();
+      Message.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -1123,6 +1313,12 @@ export const LoadMoreMessagesRes = {
           message.totalMessages = longToNumber(reader.int64() as Long);
           break;
         case 4:
+          message.firstMessageCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 5:
+          message.lastMessageCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        case 6:
           message.messages.push(Message.decode(reader, reader.uint32()));
           break;
         default:
@@ -1138,6 +1334,12 @@ export const LoadMoreMessagesRes = {
       requestInfo: isSet(object.requestInfo) ? LoadMoreMessagesRequestInfo.fromJSON(object.requestInfo) : undefined,
       isSuccess: isSet(object.isSuccess) ? Boolean(object.isSuccess) : false,
       totalMessages: isSet(object.totalMessages) ? Number(object.totalMessages) : 0,
+      firstMessageCreatedAt: isSet(object.firstMessageCreatedAt)
+        ? fromJsonTimestamp(object.firstMessageCreatedAt)
+        : undefined,
+      lastMessageCreatedAt: isSet(object.lastMessageCreatedAt)
+        ? fromJsonTimestamp(object.lastMessageCreatedAt)
+        : undefined,
       messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => Message.fromJSON(e)) : [],
     };
   },
@@ -1148,6 +1350,10 @@ export const LoadMoreMessagesRes = {
       (obj.requestInfo = message.requestInfo ? LoadMoreMessagesRequestInfo.toJSON(message.requestInfo) : undefined);
     message.isSuccess !== undefined && (obj.isSuccess = message.isSuccess);
     message.totalMessages !== undefined && (obj.totalMessages = Math.round(message.totalMessages));
+    message.firstMessageCreatedAt !== undefined &&
+      (obj.firstMessageCreatedAt = message.firstMessageCreatedAt.toISOString());
+    message.lastMessageCreatedAt !== undefined &&
+      (obj.lastMessageCreatedAt = message.lastMessageCreatedAt.toISOString());
     if (message.messages) {
       obj.messages = message.messages.map((e) => e ? Message.toJSON(e) : undefined);
     } else {
@@ -1167,6 +1373,8 @@ export const LoadMoreMessagesRes = {
       : undefined;
     message.isSuccess = object.isSuccess ?? false;
     message.totalMessages = object.totalMessages ?? 0;
+    message.firstMessageCreatedAt = object.firstMessageCreatedAt ?? undefined;
+    message.lastMessageCreatedAt = object.lastMessageCreatedAt ?? undefined;
     message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
@@ -1467,7 +1675,7 @@ export const LoadChannelsWithMsgReq = {
 };
 
 function createBaseChannelWithMsg(): ChannelWithMsg {
-  return { channel: undefined, messages: [] };
+  return { channel: undefined, notSeenMessagesCount: 0, messages: [] };
 }
 
 export const ChannelWithMsg = {
@@ -1475,8 +1683,11 @@ export const ChannelWithMsg = {
     if (message.channel !== undefined) {
       ShortChannel.encode(message.channel, writer.uint32(10).fork()).ldelim();
     }
+    if (message.notSeenMessagesCount !== 0) {
+      writer.uint32(16).int64(message.notSeenMessagesCount);
+    }
     for (const v of message.messages) {
-      Message.encode(v!, writer.uint32(18).fork()).ldelim();
+      Message.encode(v!, writer.uint32(26).fork()).ldelim();
     }
     return writer;
   },
@@ -1492,6 +1703,9 @@ export const ChannelWithMsg = {
           message.channel = ShortChannel.decode(reader, reader.uint32());
           break;
         case 2:
+          message.notSeenMessagesCount = longToNumber(reader.int64() as Long);
+          break;
+        case 3:
           message.messages.push(Message.decode(reader, reader.uint32()));
           break;
         default:
@@ -1505,6 +1719,7 @@ export const ChannelWithMsg = {
   fromJSON(object: any): ChannelWithMsg {
     return {
       channel: isSet(object.channel) ? ShortChannel.fromJSON(object.channel) : undefined,
+      notSeenMessagesCount: isSet(object.notSeenMessagesCount) ? Number(object.notSeenMessagesCount) : 0,
       messages: Array.isArray(object?.messages) ? object.messages.map((e: any) => Message.fromJSON(e)) : [],
     };
   },
@@ -1512,6 +1727,7 @@ export const ChannelWithMsg = {
   toJSON(message: ChannelWithMsg): unknown {
     const obj: any = {};
     message.channel !== undefined && (obj.channel = message.channel ? ShortChannel.toJSON(message.channel) : undefined);
+    message.notSeenMessagesCount !== undefined && (obj.notSeenMessagesCount = Math.round(message.notSeenMessagesCount));
     if (message.messages) {
       obj.messages = message.messages.map((e) => e ? Message.toJSON(e) : undefined);
     } else {
@@ -1529,6 +1745,7 @@ export const ChannelWithMsg = {
     message.channel = (object.channel !== undefined && object.channel !== null)
       ? ShortChannel.fromPartial(object.channel)
       : undefined;
+    message.notSeenMessagesCount = object.notSeenMessagesCount ?? 0;
     message.messages = object.messages?.map((e) => Message.fromPartial(e)) || [];
     return message;
   },
@@ -1587,6 +1804,194 @@ export const LoadChannelsWithMsgRes = {
   fromPartial<I extends Exact<DeepPartial<LoadChannelsWithMsgRes>, I>>(object: I): LoadChannelsWithMsgRes {
     const message = createBaseLoadChannelsWithMsgRes();
     message.channels = object.channels?.map((e) => ChannelWithMsg.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseUpdateLastSeenMessageAtReq(): UpdateLastSeenMessageAtReq {
+  return { channelId: "", lastSeenAt: undefined };
+}
+
+export const UpdateLastSeenMessageAtReq = {
+  encode(message: UpdateLastSeenMessageAtReq, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
+    if (message.lastSeenAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateLastSeenMessageAtReq {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLastSeenMessageAtReq();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channelId = reader.string();
+          break;
+        case 2:
+          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLastSeenMessageAtReq {
+    return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLastSeenMessageAtReq): unknown {
+    const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateLastSeenMessageAtReq>, I>>(base?: I): UpdateLastSeenMessageAtReq {
+    return UpdateLastSeenMessageAtReq.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UpdateLastSeenMessageAtReq>, I>>(object: I): UpdateLastSeenMessageAtReq {
+    const message = createBaseUpdateLastSeenMessageAtReq();
+    message.channelId = object.channelId ?? "";
+    message.lastSeenAt = object.lastSeenAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseUpdateLastSeenMessageAtRes(): UpdateLastSeenMessageAtRes {
+  return { channelId: "", lastSeenAt: undefined };
+}
+
+export const UpdateLastSeenMessageAtRes = {
+  encode(message: UpdateLastSeenMessageAtRes, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
+    if (message.lastSeenAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): UpdateLastSeenMessageAtRes {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUpdateLastSeenMessageAtRes();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channelId = reader.string();
+          break;
+        case 2:
+          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): UpdateLastSeenMessageAtRes {
+    return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+    };
+  },
+
+  toJSON(message: UpdateLastSeenMessageAtRes): unknown {
+    const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<UpdateLastSeenMessageAtRes>, I>>(base?: I): UpdateLastSeenMessageAtRes {
+    return UpdateLastSeenMessageAtRes.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<UpdateLastSeenMessageAtRes>, I>>(object: I): UpdateLastSeenMessageAtRes {
+    const message = createBaseUpdateLastSeenMessageAtRes();
+    message.channelId = object.channelId ?? "";
+    message.lastSeenAt = object.lastSeenAt ?? undefined;
+    return message;
+  },
+};
+
+function createBaseChannelLastSeenMessageUpdated(): ChannelLastSeenMessageUpdated {
+  return { channelId: "", lastSeenAt: undefined };
+}
+
+export const ChannelLastSeenMessageUpdated = {
+  encode(message: ChannelLastSeenMessageUpdated, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
+    if (message.channelId !== "") {
+      writer.uint32(10).string(message.channelId);
+    }
+    if (message.lastSeenAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    }
+    return writer;
+  },
+
+  decode(input: _m0.Reader | Uint8Array, length?: number): ChannelLastSeenMessageUpdated {
+    const reader = input instanceof _m0.Reader ? input : new _m0.Reader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseChannelLastSeenMessageUpdated();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.channelId = reader.string();
+          break;
+        case 2:
+          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ChannelLastSeenMessageUpdated {
+    return {
+      channelId: isSet(object.channelId) ? String(object.channelId) : "",
+      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+    };
+  },
+
+  toJSON(message: ChannelLastSeenMessageUpdated): unknown {
+    const obj: any = {};
+    message.channelId !== undefined && (obj.channelId = message.channelId);
+    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ChannelLastSeenMessageUpdated>, I>>(base?: I): ChannelLastSeenMessageUpdated {
+    return ChannelLastSeenMessageUpdated.fromPartial(base ?? {});
+  },
+
+  fromPartial<I extends Exact<DeepPartial<ChannelLastSeenMessageUpdated>, I>>(
+    object: I,
+  ): ChannelLastSeenMessageUpdated {
+    const message = createBaseChannelLastSeenMessageUpdated();
+    message.channelId = object.channelId ?? "";
+    message.lastSeenAt = object.lastSeenAt ?? undefined;
     return message;
   },
 };

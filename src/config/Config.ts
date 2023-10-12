@@ -10,8 +10,10 @@ export class Config {
             this.url = url.replace('https', 'wss');
         } else if (url.startsWith('http')) {
             this.url = url.replace('http', 'ws');
+        } else if (url.startsWith('ws') || url.startsWith('wss')) {
+            this.url = url;
         } else {
-            throw new UrlParseError('Url should contain http or https protocol');
+            throw new UrlParseError('Url should contain http, https, ws or wss protocol');
         }
     }
 

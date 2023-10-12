@@ -3,7 +3,7 @@ import { EventEmitter } from 'events';
 import { InBoundWsEvents, OutBoundWsEvents } from '../../common/const/SocketEvents';
 import { logger } from '../../config/logger';
 import { LoadMoreMessagesRes, MeJoinedToChannel } from '../../proto/events';
-import { ChannelParticipantGrants, Message as MessagePB } from '../../proto/models';
+import { ChannelParticipantGrants, Message, Message as MessagePB } from '../../proto/models';
 import { IWsConnector } from '../../socket/WSConnector';
 import { IChannelArgs, ILoadMoreMessagesArgs, IPublishMessageArgs, } from '../../types/channel.types';
 import { CustomData, IOnEvent } from '../../types/common.types';
@@ -14,6 +14,7 @@ import { LocalParticipant } from '../participant/LocalParticipant';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
 import { ChannelEvents, IChannelEmittedEvent } from './const/EmittedEvents';
 import { LoadMoreMessagesError, MyLocalParticipantNotExistError } from './errors';
+import { NotSeenCounter } from './NotSeenCounter';
 
 export class Channel {
     constructor({
@@ -26,6 +27,14 @@ export class Channel {
         this.initialPageSize = initialPageSize;
         this.emitter = new EventEmitter();
         this.socket = socket;
+
+        this.notSeenCounter = new NotSeenCounter({
+            socket: this.socket,
+            channelId,
+            emitter: this.emitter,
+        });
+
+        this.notSeenCounter.setFindMessageCb(this.findMessageById.bind(this));
         this.channelId = channelId;
     }
 
@@ -55,9 +64,19 @@ export class Channel {
 
     private messagesTotalCount:number|null = null;
 
+    private firstMessageCreatedAt:Date|undefined = undefined;
+
+    private lastMessageCreatedAt:Date|undefined = undefined;
+
+    private findMessageById(messageId:string):MessagePB|undefined {
+        return this.historyMessages.find((hm) => hm.message.message.id === messageId)?.message?.message;
+    }
+
     public channelParticipants:ChannelParticipants| undefined;
     
     public customEvents:CustomEvents|undefined;
+    
+    public notSeenCounter:NotSeenCounter;
 
     public async join () {
         this.updateConnectionState(ConnectionStates.Connecting);
@@ -145,6 +164,7 @@ export class Channel {
             [OutBoundWsEvents.LoadMoreMessages]: {
                 channelId: this.channelId,
                 pageSize: args.pageSize,
+                isLoadOlder: true,
                 firstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
                 skipFromFirstLoaded: args.skipFromFirstLoaded,
             }
@@ -159,6 +179,8 @@ export class Channel {
         }
 
         this.messagesTotalCount = args.totalMessages;
+        this.firstMessageCreatedAt = args.firstMessageCreatedAt;
+        this.lastMessageCreatedAt = args.lastMessageCreatedAt;
 
         const localMessages = args.messages?.map(
             (m) => new LocalMessage({
@@ -244,18 +266,47 @@ export class Channel {
 
         this.localParticipant = createdParticipant;
         this.messagesTotalCount = args.channel?.totalMessages || null;
+        this.firstMessageCreatedAt = args.channel?.firstMessageCreatedAt;
+        this.lastMessageCreatedAt = args.channel?.lastMessageCreatedAt;
 
+        if (args.channel) {
+            this.notSeenCounter.setInitialData({
+                notSeenMessagesCount: args.channel?.notSeenMessagesCount,
+                lastSeenMessageCreatedAt: args.channel?.lastSeenMessageCreatedAt,
+            });
+        }
+
+        this.setInitialMessages({
+            messages: args.channel?.historyMessages || [],
+            myLocalParticipant: createdParticipant,
+            lastSeenMessageCreatedAt: args.channel?.lastSeenMessageCreatedAt,
+        });
+
+        this.updateConnectionState(ConnectionStates.Connected);
+    }
+
+    private setInitialMessages = ({
+        messages,
+        myLocalParticipant,
+        lastSeenMessageCreatedAt,
+    }:{
+        messages: Message[],
+        myLocalParticipant: LocalParticipant,
+        lastSeenMessageCreatedAt: Date | undefined,
+    }) => {
         const localMessages =
-            args.channel?.historyMessages?.map((m) => new LocalMessage({
-                message: m,
-                meLocalParticipant: createdParticipant,
-                channelId: this.channelId,
-            }));
+            messages.map((m) => {
+                return new LocalMessage({
+                    message: m,
+                    meLocalParticipant: myLocalParticipant,
+                    channelId: this.channelId,
+                    isFirstUnSeen: m.createdAt?.getTime() === lastSeenMessageCreatedAt?.getTime(),
+                });
+            });
         if (localMessages) {
             this.pushMessagesToHistoryList(localMessages);
         }
-        this.updateConnectionState(ConnectionStates.Connected);
-    }
+    };
 
     private incrementMessagesTotalCount = () => {
         this.messagesTotalCount = (this.messagesTotalCount || 0) + 1;

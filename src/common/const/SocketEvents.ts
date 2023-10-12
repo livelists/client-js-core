@@ -4,7 +4,8 @@ export enum OutBoundWsEvents {
     LoadMoreMessages = 'loadMoreMessages',
     LoadParticipantsReq = 'loadParticipantsReq',
     SendCustomEvent = 'sendCustomEvent',
-    LoadChannelsWithMsgReq = 'loadChannelsWithMsgReq'
+    LoadChannelsWithMsgReq = 'loadChannelsWithMsgReq',
+    UpdateLastSeenMessageAtReq = 'updateLastSeenMessageAtReq'
 }
 
 export enum InBoundWsEvents {
@@ -15,5 +16,7 @@ export enum InBoundWsEvents {
     ParticipantBecameOffline = 'participantBecameOffline',
     LoadParticipantsRes = 'loadParticipantsRes',
     NewCustomEvent = 'newCustomEvent',
-    LoadChannelsWithMsgRes = 'loadChannelsWithMsgRes'
+    LoadChannelsWithMsgRes = 'loadChannelsWithMsgRes',
+    UpdateLastSeenMessageAtRes = 'updateLastSeenMessageAtRes',
+    ChannelLastSeenMessageUpdated = 'channelLastSeenMessageUpdated'
 }

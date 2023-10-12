@@ -8,10 +8,12 @@ export class LocalMessage {
     constructor({
         message,
         meLocalParticipant,
-        channelId
+        channelId,
+        isFirstUnSeen = false,
     }:ILocalMessageArgs) {
         const anyMessage = message as any;
         this._meLocalParticipant = meLocalParticipant;
+        this.isFirstUnSeen = isFirstUnSeen;
         this.channelId = channelId;
         if (anyMessage?.id) {
             this.wrapReceivedMessage(anyMessage);
@@ -19,6 +21,8 @@ export class LocalMessage {
             this.wrapSentMessage(anyMessage);
         }
     }
+
+    private isFirstUnSeen = false;
 
     private _message:ILocalMessage|undefined = undefined;
 
@@ -57,6 +61,7 @@ export class LocalMessage {
                 isAck: false,
                 isRead: true,
                 isMy: true,
+                isFirstUnSeen: false,
             }
         };
     };
@@ -68,6 +73,7 @@ export class LocalMessage {
                 isAck: true,
                 isRead: false,
                 isMy: message.sender?.identifier === this._meLocalParticipant.identifier,
+                isFirstUnSeen: this.isFirstUnSeen,
             }
         };
     };

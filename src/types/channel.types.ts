@@ -1,4 +1,4 @@
-import {IWsConnector, WSConnector} from '../socket/WSConnector';
+import { IWsConnector } from '../socket/WSConnector';
 import { CustomData } from './common.types';
 
 export interface IChannelArgs {

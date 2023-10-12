@@ -9,35 +9,35 @@ export enum ChannelEvents {
     ShouldScrollToBottom = 'shouldScrollToBottom'
 }
 
-export interface IRecentMessagesUpdated {
+export type IRecentMessagesUpdated = {
     event: ChannelEvents.RecentMessagesUpdated,
     data: {
         messages: LocalMessage[]
     }
 }
 
-export interface IHistoryMessagesUpdated {
+export type IHistoryMessagesUpdated = {
     event: ChannelEvents.HistoryMessagesUpdated,
     data: {
         messages: LocalMessage[]
     }
 }
 
-export interface IConnectionStateUpdated {
+export type IConnectionStateUpdated = {
     event: ChannelEvents.ConnectionStateUpdated,
     data: {
         connectionState: ConnectionState,
     }
 }
 
-export interface IIsLoadingMoreUpdated {
+export type IIsLoadingMoreUpdated = {
     event: ChannelEvents.IsLoadingMoreUpdated,
     data: {
         isLoadingMore: boolean,
     }
 }
 
-export interface IShouldScrollToBottom {
+export type IShouldScrollToBottom = {
     event: ChannelEvents.ShouldScrollToBottom,
     data: {}
 }

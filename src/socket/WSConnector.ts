@@ -212,6 +212,18 @@ export class WSConnector implements  IWsConnector {
                     data: message.message?.loadChannelsWithMsgRes,
                 });
                 break;
+            case InBoundWsEvents.ChannelLastSeenMessageUpdated:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.channelLastSeenMessageUpdated,
+                });
+                break;
+            case InBoundWsEvents.UpdateLastSeenMessageAtRes:
+                this.callListeners({
+                    event: event as InBoundWsEvents,
+                    data: message.message?.updateLastSeenMessageAtRes,
+                });
+                break;
         }
     };
 
