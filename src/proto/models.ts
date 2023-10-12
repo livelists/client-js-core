@@ -186,6 +186,7 @@ export interface CustomData_DataEntry {
 export interface ShortChannel {
   id: string;
   identifier: string;
+  createdAt?: Date;
   customData?: CustomData | undefined;
 }
 
@@ -698,7 +699,7 @@ export const CustomData_DataEntry = {
 };
 
 function createBaseShortChannel(): ShortChannel {
-  return { id: "", identifier: "", customData: undefined };
+  return { id: "", identifier: "", createdAt: undefined, customData: undefined };
 }
 
 export const ShortChannel = {
@@ -708,6 +709,9 @@ export const ShortChannel = {
     }
     if (message.identifier !== "") {
       writer.uint32(18).string(message.identifier);
+    }
+    if (message.createdAt !== undefined) {
+      Timestamp.encode(toTimestamp(message.createdAt), writer.uint32(26).fork()).ldelim();
     }
     if (message.customData !== undefined) {
       CustomData.encode(message.customData, writer.uint32(34).fork()).ldelim();
@@ -728,6 +732,9 @@ export const ShortChannel = {
         case 2:
           message.identifier = reader.string();
           break;
+        case 3:
+          message.createdAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          break;
         case 4:
           message.customData = CustomData.decode(reader, reader.uint32());
           break;
@@ -743,6 +750,7 @@ export const ShortChannel = {
     return {
       id: isSet(object.id) ? String(object.id) : "",
       identifier: isSet(object.identifier) ? String(object.identifier) : "",
+      createdAt: isSet(object.createdAt) ? fromJsonTimestamp(object.createdAt) : undefined,
       customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
     };
   },
@@ -751,6 +759,7 @@ export const ShortChannel = {
     const obj: any = {};
     message.id !== undefined && (obj.id = message.id);
     message.identifier !== undefined && (obj.identifier = message.identifier);
+    message.createdAt !== undefined && (obj.createdAt = message.createdAt.toISOString());
     message.customData !== undefined &&
       (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
     return obj;
@@ -764,6 +773,7 @@ export const ShortChannel = {
     const message = createBaseShortChannel();
     message.id = object.id ?? "";
     message.identifier = object.identifier ?? "";
+    message.createdAt = object.createdAt ?? undefined;
     message.customData = (object.customData !== undefined && object.customData !== null)
       ? CustomData.fromPartial(object.customData)
       : undefined;

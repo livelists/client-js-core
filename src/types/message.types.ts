@@ -1,7 +1,6 @@
 import { Message as MessagePB, Message } from '../proto/models';
 import { LocalParticipant } from '../services/participant/LocalParticipant';
-import { IPublishMessageArgs } from './channel.types';
-import {CustomData} from "./common.types";
+import { CustomData } from './common.types';
 
 export interface ILocalMessage {
     message: Message,
@@ -10,6 +9,7 @@ export interface ILocalMessage {
         isAck: boolean,
         isRead: boolean,
         isMy: boolean,
+        isFirstUnSeen: boolean,
     }
 }
 
@@ -23,4 +23,5 @@ export interface ILocalMessageArgs {
     channelId: string,
     message: ILocalMessageDataArgs | MessagePB,
     meLocalParticipant: LocalParticipant,
+    isFirstUnSeen?: boolean,
 }

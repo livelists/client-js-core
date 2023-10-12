@@ -1,5 +1,5 @@
-import { Config } from '../../src/config/Config';
-import { UrlParseError } from '../../src/config/errors';
+import { Config } from '../../config/Config';
+import { UrlParseError } from '../../config/errors';
 
 let config:Config;
 beforeEach(() => {

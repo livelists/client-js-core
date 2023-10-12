@@ -1,8 +1,8 @@
-import {Channel, ConnectionStates, Message, Message as MessagePB, ParticipantShortInfo} from '../../../src';
+import {Channel, ConnectionStates, Message, Message as MessagePB, ParticipantShortInfo} from '../../..';
 import { FakeWSConnector, IFakeWsConnect } from '../../WsConnector.fake';
-import {InBoundWsEvents} from "../../../src/common/const/SocketEvents";
-import {CustomData, MessageSubType, MessageType} from "../../../src/proto/models";
-import {LoadMoreMessagesError, MyLocalParticipantNotExistError} from "../../../src/services/channel/errors";
+import {InBoundWsEvents} from "../../../common/const/SocketEvents";
+import {CustomData, MessageSubType, MessageType} from "../../../proto/models";
+import {LoadMoreMessagesError, MyLocalParticipantNotExistError} from "../../../services/channel/errors";
 
 const ME_PARTICIPANT_ID = 'meParticipantId';
 
@@ -78,6 +78,10 @@ describe('Channel children initialization', () => {
             socket: wsConnector,
             channelId: 'channelId',
         });
+    });
+
+    it('Not seen counter should init in start', () => {
+        expect(channel.notSeenCounter).toBeTruthy()
     });
 
     it('customEvents should init after success join', () => {
@@ -197,6 +201,7 @@ describe('After join channel response', () => {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages: [],
+                        notSeenMessagesCount: 2,
                     }
                 }
             }
@@ -230,6 +235,7 @@ describe('After join channel response', () => {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages,
+                        notSeenMessagesCount: 2,
                     }
                 }
             }
@@ -253,6 +259,7 @@ describe('After join channel response', () => {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages: [],
+                        notSeenMessagesCount: 2,
                     }
                 }
             }
@@ -395,6 +402,7 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 10,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -420,6 +428,7 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -445,6 +454,7 @@ describe('After call load more messages', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -491,6 +501,7 @@ describe('Messages total count', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -514,6 +525,7 @@ describe('Messages total count', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -608,6 +620,7 @@ describe('After load messages response', () => {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
+                        notSeenMessagesCount: 2,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,

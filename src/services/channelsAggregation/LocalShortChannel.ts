@@ -33,7 +33,7 @@ export class LocalShortChannel {
     private onUpdatedCb:(({
         channel,
         unreadCount
-    }:IShortChannelData) => void) | undefined;
+    }:IShortChannelData) => void)[]  = [];
 
     private socket:IWsConnector|undefined;
 
@@ -45,7 +45,7 @@ export class LocalShortChannel {
         channel,
         unreadCount
     }:IShortChannelData) => void}) {
-        this.onUpdatedCb = cb;
+        this.onUpdatedCb?.push(cb);
     }
 
     public updateChannelLastMessage({
@@ -58,7 +58,7 @@ export class LocalShortChannel {
     }
 
     private wrapChannelFromServer(ch:ChannelWithMsg) {
-        this.unreadCount = 2;
+        this.unreadCount = ch.notSeenMessagesCount;
     }
 
     private onNewMessage(args:MessagePB) {
@@ -72,10 +72,10 @@ export class LocalShortChannel {
 
     private callChannelUpdated = () => {
         if (this.onUpdatedCb) {
-            this.onUpdatedCb({
+            this.onUpdatedCb.map((cb) => cb({
                 channel: this.channel,
                 unreadCount: this.unreadCount,
-            });
+            }));
         }
     };
 }

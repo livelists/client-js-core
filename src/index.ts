@@ -7,6 +7,8 @@ import {
     WSRoomTypes,
     CustomEvent,
     ShortChannel,
+    MessageType,
+    MessageSubType,
 } from './proto/models';
 import { Channel } from './services/channel/Channel';
 import { ConnectionState, ConnectionStates } from './services/channel/const/ConnectionState';
@@ -19,6 +21,11 @@ import {
     IIsLoadingMoreUpdated,
     IShouldScrollToBottom,
 } from './services/channel/const/EmittedEvents';
+import {
+    INotSeenCountUpdated,
+    INotSeenCounterEvent,
+    NotSeenCounterEmittedEvents,
+} from './services/channel/const/NotSeenCounterEmittedEvents';
 import {
     ChannelsAggregation,
 } from './services/channelsAggregation/ChannelsAggregation';
@@ -101,4 +108,9 @@ export {
     IChannelsListUpdated,
     IShouldScrollToBottom,
     IShortChannelData,
+    INotSeenCountUpdated,
+    INotSeenCounterEvent,
+    NotSeenCounterEmittedEvents,
+    MessageType,
+    MessageSubType,
 };
