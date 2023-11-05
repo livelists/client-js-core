@@ -155,6 +155,7 @@ export class Channel {
         if (this.isLoadingMore) {
             return;
         }
+
         if ((this.messagesTotalCount || -1) <= this.historyMessages.length + this.recentMessages.length) {
             return;
         }
@@ -195,13 +196,12 @@ export class Channel {
     }
 
     private getFirstLoadedCreatedAt ():Date {
+
         if (this.historyMessages?.[0]?.message?.message?.createdAt) {
             return this.historyMessages[0].message.message.createdAt;
         }
         if (this.recentMessages?.[0]?.message?.message?.createdAt) {
-            return (
-                this.recentMessages[0].message.message.createdAt
-            );
+            return this.recentMessages[0].message.message.createdAt;
         }
         return new Date();
     };
@@ -294,18 +294,78 @@ export class Channel {
         myLocalParticipant: LocalParticipant,
         lastSeenMessageCreatedAt: Date | undefined,
     }) => {
+        let isUnreadFind = false;
         const localMessages =
-            messages.map((m) => {
+            messages.map((m, index) => {
+                let isFirstUnseen = this.isMessageFirstUnSeen({
+                    messages,
+                    currentMessageCreatedAt: m.createdAt,
+                    currentMessageIndex: index,
+                    lastSeenMessageCreatedAt,
+                    isFindFirstUnSeen: isUnreadFind,
+                });
+
+                if (isFirstUnseen) {
+                    isUnreadFind = true;
+                }
+
                 return new LocalMessage({
                     message: m,
                     meLocalParticipant: myLocalParticipant,
                     channelId: this.channelId,
-                    isFirstUnSeen: m.createdAt?.getTime() === lastSeenMessageCreatedAt?.getTime(),
+                    isFirstUnSeen: isFirstUnseen,
                 });
             });
         if (localMessages) {
             this.pushMessagesToHistoryList(localMessages);
         }
+    };
+
+    private isMessageFirstUnSeen = ({
+        messages,
+        currentMessageCreatedAt,
+        currentMessageIndex,
+        lastSeenMessageCreatedAt,
+        isFindFirstUnSeen,
+    }:{
+        messages: Message[],
+        currentMessageCreatedAt: Date | undefined,
+        currentMessageIndex: number,
+        lastSeenMessageCreatedAt: Date | undefined,
+        isFindFirstUnSeen: boolean,
+    }):boolean => {
+        if (isFindFirstUnSeen) {
+            return false;
+        }
+        if (!lastSeenMessageCreatedAt || !currentMessageCreatedAt) {
+            return false;
+        }
+
+        let nextMessageCreatedAt = messages?.[currentMessageIndex + 1]?.createdAt;
+        let prevMessageCreatedAt = messages?.[currentMessageIndex - 1]?.createdAt;
+
+        if (!nextMessageCreatedAt) {
+            return currentMessageCreatedAt.getTime() > lastSeenMessageCreatedAt.getTime();
+        }
+
+        if (
+            !prevMessageCreatedAt &&
+            nextMessageCreatedAt.getTime() > lastSeenMessageCreatedAt.getTime() &&
+            currentMessageCreatedAt.getTime() <=  lastSeenMessageCreatedAt.getTime()
+        ) {
+            return true;
+        } else if (!prevMessageCreatedAt) {
+            return false;
+        }
+
+        if (
+            prevMessageCreatedAt.getTime() < lastSeenMessageCreatedAt.getTime() &&
+            nextMessageCreatedAt.getTime() > lastSeenMessageCreatedAt.getTime())
+        {
+            return true;
+        }
+
+        return false;
     };
 
     private incrementMessagesTotalCount = () => {

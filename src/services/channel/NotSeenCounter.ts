@@ -49,13 +49,7 @@ export class NotSeenCounter {
 
         if (this.lastSeenMessageCreatedAt == undefined) {
             this.lastSeenMessageCreatedAt = message.createdAt;
-            this.socket.publishMessage({
-                $case: OutBoundWsEvents.UpdateLastSeenMessageAtReq,
-                [OutBoundWsEvents.UpdateLastSeenMessageAtReq]: {
-                    channelId: this.channelId,
-                    lastSeenAt: this.lastSeenMessageCreatedAt,
-                }
-            });
+            this.publishUpdateLastSeenMessage();
         }
 
         if (this.lastSeenMessageCreatedAt >= message.createdAt) {
@@ -63,20 +57,18 @@ export class NotSeenCounter {
         }
 
         this.lastSeenMessageCreatedAt = message.createdAt;
-
-        this.socket.publishMessage({
-            $case: OutBoundWsEvents.UpdateLastSeenMessageAtReq,
-            [OutBoundWsEvents.UpdateLastSeenMessageAtReq]: {
-                channelId: this.channelId,
-                lastSeenAt: this.lastSeenMessageCreatedAt,
-            }
-        });
+        this.publishUpdateLastSeenMessage();
     };
 
     public setInitialData({
         notSeenMessagesCount,
         lastSeenMessageCreatedAt,
     }:ISetInitialDataArgs) {
+        const bc = new BroadcastChannel('test_channel');
+        bc.postMessage({
+            message: 'info'
+        });
+
         this.updateNotSeenCount(notSeenMessagesCount);
         this.lastSeenMessageCreatedAt = lastSeenMessageCreatedAt;
     };
@@ -92,6 +84,18 @@ export class NotSeenCounter {
         });
     };
 
+    private publishUpdateLastSeenMessage() {
+        if (this.lastSeenMessageCreatedAt == undefined) {
+            return;
+        }
+        this.socket.publishMessage({
+            $case: OutBoundWsEvents.UpdateLastSeenMessageAtReq,
+            [OutBoundWsEvents.UpdateLastSeenMessageAtReq]: {
+                channelId: this.channelId,
+                lastSeenAtUnixMS: this.lastSeenMessageCreatedAt.getTime(),
+            }
+        });
+    }
 
     private emit (event:INotSeenCounterEvent) {
         this.emitter?.emit(event.event, event.data);

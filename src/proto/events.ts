@@ -131,7 +131,7 @@ export interface LoadChannelsWithMsgRes {
 
 export interface UpdateLastSeenMessageAtReq {
   channelId: string;
-  lastSeenAt?: Date;
+  lastSeenAtUnixMS: number;
 }
 
 export interface UpdateLastSeenMessageAtRes {
@@ -1809,7 +1809,7 @@ export const LoadChannelsWithMsgRes = {
 };
 
 function createBaseUpdateLastSeenMessageAtReq(): UpdateLastSeenMessageAtReq {
-  return { channelId: "", lastSeenAt: undefined };
+  return { channelId: "", lastSeenAtUnixMS: 0 };
 }
 
 export const UpdateLastSeenMessageAtReq = {
@@ -1817,8 +1817,8 @@ export const UpdateLastSeenMessageAtReq = {
     if (message.channelId !== "") {
       writer.uint32(10).string(message.channelId);
     }
-    if (message.lastSeenAt !== undefined) {
-      Timestamp.encode(toTimestamp(message.lastSeenAt), writer.uint32(18).fork()).ldelim();
+    if (message.lastSeenAtUnixMS !== 0) {
+      writer.uint32(16).int64(message.lastSeenAtUnixMS);
     }
     return writer;
   },
@@ -1834,7 +1834,7 @@ export const UpdateLastSeenMessageAtReq = {
           message.channelId = reader.string();
           break;
         case 2:
-          message.lastSeenAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
+          message.lastSeenAtUnixMS = longToNumber(reader.int64() as Long);
           break;
         default:
           reader.skipType(tag & 7);
@@ -1847,14 +1847,14 @@ export const UpdateLastSeenMessageAtReq = {
   fromJSON(object: any): UpdateLastSeenMessageAtReq {
     return {
       channelId: isSet(object.channelId) ? String(object.channelId) : "",
-      lastSeenAt: isSet(object.lastSeenAt) ? fromJsonTimestamp(object.lastSeenAt) : undefined,
+      lastSeenAtUnixMS: isSet(object.lastSeenAtUnixMS) ? Number(object.lastSeenAtUnixMS) : 0,
     };
   },
 
   toJSON(message: UpdateLastSeenMessageAtReq): unknown {
     const obj: any = {};
     message.channelId !== undefined && (obj.channelId = message.channelId);
-    message.lastSeenAt !== undefined && (obj.lastSeenAt = message.lastSeenAt.toISOString());
+    message.lastSeenAtUnixMS !== undefined && (obj.lastSeenAtUnixMS = Math.round(message.lastSeenAtUnixMS));
     return obj;
   },
 
@@ -1865,7 +1865,7 @@ export const UpdateLastSeenMessageAtReq = {
   fromPartial<I extends Exact<DeepPartial<UpdateLastSeenMessageAtReq>, I>>(object: I): UpdateLastSeenMessageAtReq {
     const message = createBaseUpdateLastSeenMessageAtReq();
     message.channelId = object.channelId ?? "";
-    message.lastSeenAt = object.lastSeenAt ?? undefined;
+    message.lastSeenAtUnixMS = object.lastSeenAtUnixMS ?? 0;
     return message;
   },
 };
