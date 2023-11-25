@@ -21,7 +21,7 @@ type StructuredLogger = {
 
 const liveListLogger = log.getLogger('livelists');
 
-liveListLogger.setLevel(LogLevel.info);
+liveListLogger.setLevel(LogLevel.debug);
 
 export function setLogLevel(level: LogLevel | LogLevelString) {
     liveListLogger.setLevel(level);
