@@ -6,7 +6,12 @@ import {
     OutBoundMessage,
 } from '../proto/events';
 import { ConnectionError } from '../services/channel/errors';
-import { IOpenConnectionArgs, ISubscribeArgs } from '../types/websocket.types';
+import {
+    IOpenConnectionArgs,
+    ISubscribeArgs,
+    IWsConnectorArgs,
+} from '../types/websocket.types';
+import { DefaultReconnectPolicy, ReconnectCore, ReconnectPolicy } from './ReconnectPolicy';
 
 type OutBoundMessageData = OutBoundMessage['message']
 
@@ -20,6 +25,16 @@ export interface IWsConnector {
 }
 
 export class WSConnector implements  IWsConnector {
+    constructor(args:IWsConnectorArgs) {
+        if (args.reconnectPolicy) {
+            this.reconnectPolicy = new ReconnectCore(args.reconnectPolicy);
+        }
+    }
+
+    private reconnectPolicy:ReconnectCore = new ReconnectCore(new DefaultReconnectPolicy());
+
+    private reconnectAttempt:number = 0;
+
     private ws?:WebSocket;
 
     public isConnected:boolean = false;
@@ -56,6 +71,7 @@ export class WSConnector implements  IWsConnector {
 
         return new Promise<void|InBoundMessage>((resolve, reject) => {
             ws.onerror = async (ev: Event) => {
+                logger.debug(`websocket connection err: ${ev.type}`);
                 if (!this.ws) {
                     try {
                         const resp = await fetch(`http${args.url.substring(2)}/?accessToken=${args.authToken}`);
@@ -107,6 +123,13 @@ export class WSConnector implements  IWsConnector {
 
             ws.onclose = (ev: CloseEvent) => {
                 if (!this.isConnected || this.ws !== ws) return;
+
+                this.reconnectPolicy.onReTry({
+                    attemptNumber: this.reconnectAttempt,
+                    onCallRetry: () => this.openConnection(args)
+                });
+
+                this.reconnectAttempt++;
 
                 logger.debug(`websocket connection closed: ${ev.reason}`);
                 this.isConnected = false;
@@ -275,7 +298,6 @@ export class WSConnector implements  IWsConnector {
             console.log('ping interval duration not set');
             return;
         }
-        console.log('start ping interval');
         this.pingInterval = setInterval(() => {
             this.sendPing();
         }, this.pingIntervalDuration * 1000);

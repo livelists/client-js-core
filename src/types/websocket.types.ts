@@ -8,6 +8,7 @@ import {
     LoadChannelsWithMsgRes,
 } from '../proto/events';
 import { CustomEvent, Message } from '../proto/models';
+import { ReconnectPolicy } from '../socket/ReconnectPolicy';
 import {
     IOnEvent
 } from './common.types';
@@ -15,6 +16,10 @@ import {
 export interface IOpenConnectionArgs {
     url: string,
     authToken: string,
+}
+
+export interface IWsConnectorArgs {
+    reconnectPolicy?: ReconnectPolicy
 }
 
 export type ISubscribeArgs = 
