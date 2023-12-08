@@ -1,3 +1,4 @@
+import { CustomData } from '../../../proto/models';
 import { LocalMessage } from '../../message/LocalMessage';
 import { ConnectionState } from './ConnectionState';
 
@@ -6,7 +7,8 @@ export enum ChannelEvents {
     HistoryMessagesUpdated = 'historyMessagesUpdated',
     ConnectionStateUpdated = 'connectionStateUpdated',
     IsLoadingMoreUpdated = 'isLoadingMoreUpdated',
-    ShouldScrollToBottom = 'shouldScrollToBottom'
+    ShouldScrollToBottom = 'shouldScrollToBottom',
+    InitialInfoUpdated = 'initialInfoUpdated'
 }
 
 export type IRecentMessagesUpdated = {
@@ -42,9 +44,20 @@ export type IShouldScrollToBottom = {
     data: {}
 }
 
+export type IInitialInfoUpdated = {
+    event: ChannelEvents.InitialInfoUpdated,
+    data: {
+        identifier: string,
+        customData: CustomData | undefined,
+        participantsCount: number,
+        participantsOnlineCount: number,
+    }
+}
+
 export type IChannelEmittedEvent =
     IRecentMessagesUpdated |
     IHistoryMessagesUpdated |
     IConnectionStateUpdated |
     IIsLoadingMoreUpdated |
-    IShouldScrollToBottom;
+    IShouldScrollToBottom |
+    IInitialInfoUpdated;

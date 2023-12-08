@@ -10,6 +10,9 @@ import {
     MessageType,
     MessageSubType,
 } from './proto/models';
+import {
+    CustomData as ServerCustomData,
+} from './proto/models';
 import { Channel } from './services/channel/Channel';
 import { ConnectionState, ConnectionStates } from './services/channel/const/ConnectionState';
 import {
@@ -20,6 +23,7 @@ import {
     IChannelEmittedEvent,
     IIsLoadingMoreUpdated,
     IShouldScrollToBottom,
+    IInitialInfoUpdated
 } from './services/channel/const/EmittedEvents';
 import {
     INotSeenCountUpdated,
@@ -109,8 +113,10 @@ export {
     IShouldScrollToBottom,
     IShortChannelData,
     INotSeenCountUpdated,
+    ServerCustomData,
     INotSeenCounterEvent,
     NotSeenCounterEmittedEvents,
     MessageType,
     MessageSubType,
+    IInitialInfoUpdated
 };

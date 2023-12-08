@@ -1,8 +1,11 @@
 import { EventEmitter } from 'events';
 
+import { BroadCast } from '../../broadcastChannel/BroadCast';
+import { BroadCastChannels } from '../../common/const/BroadCastChannels';
 import { OutBoundWsEvents } from '../../common/const/SocketEvents';
 import { Message as MessagePB } from '../../proto/models';
 import { IWsConnector } from '../../socket/WSConnector';
+import { BroadCastEventNames } from '../../types/broadCastChannel.types';
 import { IOnEvent } from '../../types/common.types';
 import { INotSeenCounter, IReadMessageArgs, ISetInitialDataArgs } from '../../types/notSeenCounter.types';
 import { INotSeenCounterEvent, NotSeenCounterEmittedEvents } from './const/NotSeenCounterEmittedEvents';
@@ -34,10 +37,16 @@ export class NotSeenCounter {
         this.findMessageCb = cb;
     }
 
+    private countMessageIntervalCb: ((startDate:Date, endDate: Date) => number) | undefined;
+
+    public setCountMessageIntervalCb (cb:((startDate:Date, endDate: Date) => number)) {
+        this.countMessageIntervalCb = cb;
+    }
+
     public readMessage({
         messageId
     }:IReadMessageArgs) {
-        if (!this.findMessageCb) {
+        if (!this.findMessageCb || !this.countMessageIntervalCb) {
             return;
         }
 
@@ -47,35 +56,49 @@ export class NotSeenCounter {
             return;
         }
 
-        if (this.lastSeenMessageCreatedAt == undefined) {
-            this.lastSeenMessageCreatedAt = message.createdAt;
-            this.publishUpdateLastSeenMessage();
-        }
-
-        if (this.lastSeenMessageCreatedAt >= message.createdAt) {
+        if (this.lastSeenMessageCreatedAt as Date >= message.createdAt) {
             return;
         }
 
-        this.lastSeenMessageCreatedAt = message.createdAt;
-        this.publishUpdateLastSeenMessage();
+        this.reCalculateNotSeenCount(message.createdAt);
     };
 
     public setInitialData({
         notSeenMessagesCount,
         lastSeenMessageCreatedAt,
     }:ISetInitialDataArgs) {
-        const bc = new BroadcastChannel('test_channel');
-        bc.postMessage({
-            message: 'info'
-        });
-
         this.updateNotSeenCount(notSeenMessagesCount);
         this.lastSeenMessageCreatedAt = lastSeenMessageCreatedAt;
     };
 
+    private reCalculateNotSeenCount(newLastSeenCreatedAt:Date) {
+        if (this.lastSeenMessageCreatedAt === undefined || !this.countMessageIntervalCb) {
+            return;
+        }
+
+        const prevLastSeenMessageCreatedAt = this.lastSeenMessageCreatedAt;
+        this.lastSeenMessageCreatedAt = newLastSeenCreatedAt;
+        this.publishUpdateLastSeenMessage();
+
+        const viewedMessagesCount = this.countMessageIntervalCb(prevLastSeenMessageCreatedAt, newLastSeenCreatedAt);
+
+        if (viewedMessagesCount > 0) {
+            this.updateNotSeenCount(this.notSeenCount - viewedMessagesCount);
+        }
+    }
 
     private updateNotSeenCount(count:number){
         this.notSeenCount = count;
+
+        const bc = new BroadCast(BroadCastChannels.TabBroadCastChannel);
+        bc.publish({
+            event: BroadCastEventNames.UpdateChannelNotSeenCount,
+            data: {
+                count: this.notSeenCount,
+                channelId: this.channelId
+            }
+        });
+
         this.emit({
             event: NotSeenCounterEmittedEvents.CountUpdated,
             data: {

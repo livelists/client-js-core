@@ -1,9 +1,12 @@
 import { EventEmitter } from 'events';
 
+import { BroadCast } from '../../broadcastChannel/BroadCast';
+import { BroadCastChannels } from '../../common/const/BroadCastChannels';
 import { InBoundWsEvents } from '../../common/const/SocketEvents';
 import { ChannelWithMsg } from '../../proto/events';
 import { Message as MessagePB } from '../../proto/models';
 import { IWsConnector } from '../../socket/WSConnector';
+import { BroadCastEventNames } from '../../types/broadCastChannel.types';
 import { IShortChannelData } from '../../types/channelsAggregation.types';
 import { ILocalShortChannelArgs } from '../../types/localShortChannel.types';
 
@@ -23,6 +26,21 @@ export class LocalShortChannel {
         this.socket.subscribe({
             event: InBoundWsEvents.NewMessage,
             cb: this.onNewMessage.bind(this),
+        });
+
+        const bc = new BroadCast(BroadCastChannels.TabBroadCastChannel);
+
+        bc.subscribe({
+            event: BroadCastEventNames.UpdateChannelNotSeenCount,
+            cb: (data) =>  {
+                if (
+                    this.channel.channel?.identifier === data.channelId &&
+                    this.unreadCount !== data.count
+                ) {
+                    this.unreadCount = data.count;
+                    this.callChannelUpdated();
+                }
+            }
         });
     }
 

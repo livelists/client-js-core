@@ -35,6 +35,7 @@ export class Channel {
         });
 
         this.notSeenCounter.setFindMessageCb(this.findMessageById.bind(this));
+        this.notSeenCounter.setCountMessageIntervalCb(this.countMessageInterval.bind(this));
         this.channelId = channelId;
     }
 
@@ -70,6 +71,20 @@ export class Channel {
 
     private findMessageById(messageId:string):MessagePB|undefined {
         return this.historyMessages.find((hm) => hm.message.message.id === messageId)?.message?.message;
+    }
+
+    private countMessageInterval(startDate:Date, endDate: Date):number {
+        const startMessageIndex = this.historyMessages.findIndex(
+            (m) => m.message.message.createdAt === startDate);
+
+        const endMessageIndex = this.historyMessages.findIndex(
+            (m) => m.message.message.createdAt === endDate);
+
+        if (startMessageIndex === -1 || endMessageIndex === -1) {
+            return 0;
+        }
+
+        return endMessageIndex - startMessageIndex;
     }
 
     public channelParticipants:ChannelParticipants| undefined;
@@ -283,6 +298,18 @@ export class Channel {
         });
 
         this.updateConnectionState(ConnectionStates.Connected);
+
+        if (args.channel) {
+            this.emit({
+                event: ChannelEvents.InitialInfoUpdated,
+                data: {
+                    identifier: args.channel?.channelId,
+                    customData: args.channel?.customData,
+                    participantsCount: args.channel?.participantsCount,
+                    participantsOnlineCount: args.channel?.participantsOnlineCount,
+                }
+            });
+        }
     }
 
     private setInitialMessages = ({
@@ -359,8 +386,8 @@ export class Channel {
         }
 
         if (
-            prevMessageCreatedAt.getTime() < lastSeenMessageCreatedAt.getTime() &&
-            nextMessageCreatedAt.getTime() > lastSeenMessageCreatedAt.getTime())
+            currentMessageCreatedAt.getTime() > lastSeenMessageCreatedAt.getTime() &&
+            prevMessageCreatedAt.getTime() <= lastSeenMessageCreatedAt.getTime())
         {
             return true;
         }

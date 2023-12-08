@@ -59,6 +59,9 @@ export interface ChannelInitialInfo {
   notSeenMessagesCount: number;
   lastSeenMessageCreatedAt?: Date;
   historyMessages: Message[];
+  customData?: CustomData | undefined;
+  participantsCount: number;
+  participantsOnlineCount: number;
 }
 
 export interface MeJoined {
@@ -824,6 +827,9 @@ function createBaseChannelInitialInfo(): ChannelInitialInfo {
     notSeenMessagesCount: 0,
     lastSeenMessageCreatedAt: undefined,
     historyMessages: [],
+    customData: undefined,
+    participantsCount: 0,
+    participantsOnlineCount: 0,
   };
 }
 
@@ -849,6 +855,15 @@ export const ChannelInitialInfo = {
     }
     for (const v of message.historyMessages) {
       Message.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.customData !== undefined) {
+      CustomData.encode(message.customData, writer.uint32(66).fork()).ldelim();
+    }
+    if (message.participantsCount !== 0) {
+      writer.uint32(72).int64(message.participantsCount);
+    }
+    if (message.participantsOnlineCount !== 0) {
+      writer.uint32(80).int64(message.participantsOnlineCount);
     }
     return writer;
   },
@@ -881,6 +896,15 @@ export const ChannelInitialInfo = {
         case 7:
           message.historyMessages.push(Message.decode(reader, reader.uint32()));
           break;
+        case 8:
+          message.customData = CustomData.decode(reader, reader.uint32());
+          break;
+        case 9:
+          message.participantsCount = longToNumber(reader.int64() as Long);
+          break;
+        case 10:
+          message.participantsOnlineCount = longToNumber(reader.int64() as Long);
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -906,6 +930,9 @@ export const ChannelInitialInfo = {
       historyMessages: Array.isArray(object?.historyMessages)
         ? object.historyMessages.map((e: any) => Message.fromJSON(e))
         : [],
+      customData: isSet(object.customData) ? CustomData.fromJSON(object.customData) : undefined,
+      participantsCount: isSet(object.participantsCount) ? Number(object.participantsCount) : 0,
+      participantsOnlineCount: isSet(object.participantsOnlineCount) ? Number(object.participantsOnlineCount) : 0,
     };
   },
 
@@ -925,6 +952,11 @@ export const ChannelInitialInfo = {
     } else {
       obj.historyMessages = [];
     }
+    message.customData !== undefined &&
+      (obj.customData = message.customData ? CustomData.toJSON(message.customData) : undefined);
+    message.participantsCount !== undefined && (obj.participantsCount = Math.round(message.participantsCount));
+    message.participantsOnlineCount !== undefined &&
+      (obj.participantsOnlineCount = Math.round(message.participantsOnlineCount));
     return obj;
   },
 
@@ -941,6 +973,11 @@ export const ChannelInitialInfo = {
     message.notSeenMessagesCount = object.notSeenMessagesCount ?? 0;
     message.lastSeenMessageCreatedAt = object.lastSeenMessageCreatedAt ?? undefined;
     message.historyMessages = object.historyMessages?.map((e) => Message.fromPartial(e)) || [];
+    message.customData = (object.customData !== undefined && object.customData !== null)
+      ? CustomData.fromPartial(object.customData)
+      : undefined;
+    message.participantsCount = object.participantsCount ?? 0;
+    message.participantsOnlineCount = object.participantsOnlineCount ?? 0;
     return message;
   },
 };

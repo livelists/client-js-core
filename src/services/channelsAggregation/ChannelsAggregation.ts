@@ -25,12 +25,6 @@ export class ChannelsAggregation {
         this.emitter.addListener(NotSeenCounterEmittedEvents.CountUpdated, (data:any) => {
             console.log(data, 'counter inside aggr');
         });
-
-        const bc = new BroadcastChannel('test_channel');
-
-        bc.onmessage = (event) => {
-
-        };
     }
 
     private emitter:EventEmitter;
