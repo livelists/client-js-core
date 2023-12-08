@@ -202,6 +202,9 @@ describe('After join channel response', () => {
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages: [],
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     }
                 }
             }
@@ -236,6 +239,9 @@ describe('After join channel response', () => {
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     }
                 }
             }
@@ -260,6 +266,9 @@ describe('After join channel response', () => {
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
                         historyMessages: [],
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     }
                 }
             }
@@ -403,6 +412,9 @@ describe('After call load more messages', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 10,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -429,6 +441,9 @@ describe('After call load more messages', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -455,6 +470,9 @@ describe('After call load more messages', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: 4,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -502,6 +520,9 @@ describe('Messages total count', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -526,6 +547,9 @@ describe('Messages total count', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -621,6 +645,9 @@ describe('After load messages response', () => {
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
                         totalMessages: TOTAL_COUNT,
                         notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
                     },
                     me: {
                         identifier: ME_PARTICIPANT_ID,
@@ -674,3 +701,89 @@ describe('After load messages response', () => {
         expect(channel['historyMessages'].length).toBe(tempHistoryMessagesLength + responseMessages.length)
     });
 });
+
+describe("Find not seen message", () => {
+    let channel:Channel;
+    let wsConnector:IFakeWsConnect;
+    const TOTAL_COUNT = 10;
+
+    beforeAll(async () => {
+        wsConnector = new FakeWSConnector();
+        wsConnector.isConnected = true;
+        channel = new Channel({
+            initialOffset: 1,
+            initialPageSize: 1,
+            socket: wsConnector,
+            channelId: 'channelId',
+        });
+        channel.join();
+
+        await wsConnector.sendMessageFake({
+            message: {
+                $case: "meJoinedToChannel",
+                meJoinedToChannel: {
+                    isSuccess: true,
+                    channel: {
+                        channelId: "fakeChannelId",
+                        historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
+                        totalMessages: TOTAL_COUNT,
+                        notSeenMessagesCount: 2,
+                        customData: undefined,
+                        participantsOnlineCount: 1,
+                        participantsCount: 1,
+                    },
+                    me: {
+                        identifier: ME_PARTICIPANT_ID,
+                    }
+                },
+            }
+        });
+    });
+
+
+    it('should return false if already find', () => {
+        expect(channel['isMessageFirstUnSeen']({
+            messages: [],
+            currentMessageIndex: 0,
+            isFindFirstUnSeen: true,
+            currentMessageCreatedAt: undefined,
+            lastSeenMessageCreatedAt: undefined,
+        })).toBeFalsy()
+    })
+
+    it('should return true if last and last seen under', () => {
+        expect(channel['isMessageFirstUnSeen']({
+            messages: [{
+                id: '1',
+                text: 'string',
+                channelIdentifier: 'string',
+                type: MessageType.ParticipantCreated,
+                subType: MessageSubType.TextMessage,
+                localId: 'string',
+                createdAt: new Date(100),
+            }],
+            currentMessageIndex: 0,
+            isFindFirstUnSeen: false,
+            currentMessageCreatedAt: new Date(100),
+            lastSeenMessageCreatedAt: new Date(99),
+        })).toBeTruthy()
+    })
+
+    it('should return true if last and last seen under', () => {
+        expect(channel['isMessageFirstUnSeen']({
+            messages: [{
+                id: '1',
+                text: 'string',
+                channelIdentifier: 'string',
+                type: MessageType.ParticipantCreated,
+                subType: MessageSubType.TextMessage,
+                localId: 'string',
+                createdAt: new Date(100),
+            }],
+            currentMessageIndex: 0,
+            isFindFirstUnSeen: false,
+            currentMessageCreatedAt: new Date(100),
+            lastSeenMessageCreatedAt: new Date(99),
+        })).toBeTruthy()
+    })
+})
