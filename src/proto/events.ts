@@ -73,6 +73,7 @@ export interface MeJoined {
 export interface MeJoinedToChannel {
   me?: MeJoined;
   isSuccess: boolean;
+  isParticipantFound: boolean;
   channel?: ChannelInitialInfo;
 }
 
@@ -1060,7 +1061,7 @@ export const MeJoined = {
 };
 
 function createBaseMeJoinedToChannel(): MeJoinedToChannel {
-  return { me: undefined, isSuccess: false, channel: undefined };
+  return { me: undefined, isSuccess: false, isParticipantFound: false, channel: undefined };
 }
 
 export const MeJoinedToChannel = {
@@ -1071,8 +1072,11 @@ export const MeJoinedToChannel = {
     if (message.isSuccess === true) {
       writer.uint32(16).bool(message.isSuccess);
     }
+    if (message.isParticipantFound === true) {
+      writer.uint32(24).bool(message.isParticipantFound);
+    }
     if (message.channel !== undefined) {
-      ChannelInitialInfo.encode(message.channel, writer.uint32(26).fork()).ldelim();
+      ChannelInitialInfo.encode(message.channel, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -1091,6 +1095,9 @@ export const MeJoinedToChannel = {
           message.isSuccess = reader.bool();
           break;
         case 3:
+          message.isParticipantFound = reader.bool();
+          break;
+        case 4:
           message.channel = ChannelInitialInfo.decode(reader, reader.uint32());
           break;
         default:
@@ -1105,6 +1112,7 @@ export const MeJoinedToChannel = {
     return {
       me: isSet(object.me) ? MeJoined.fromJSON(object.me) : undefined,
       isSuccess: isSet(object.isSuccess) ? Boolean(object.isSuccess) : false,
+      isParticipantFound: isSet(object.isParticipantFound) ? Boolean(object.isParticipantFound) : false,
       channel: isSet(object.channel) ? ChannelInitialInfo.fromJSON(object.channel) : undefined,
     };
   },
@@ -1113,6 +1121,7 @@ export const MeJoinedToChannel = {
     const obj: any = {};
     message.me !== undefined && (obj.me = message.me ? MeJoined.toJSON(message.me) : undefined);
     message.isSuccess !== undefined && (obj.isSuccess = message.isSuccess);
+    message.isParticipantFound !== undefined && (obj.isParticipantFound = message.isParticipantFound);
     message.channel !== undefined &&
       (obj.channel = message.channel ? ChannelInitialInfo.toJSON(message.channel) : undefined);
     return obj;
@@ -1126,6 +1135,7 @@ export const MeJoinedToChannel = {
     const message = createBaseMeJoinedToChannel();
     message.me = (object.me !== undefined && object.me !== null) ? MeJoined.fromPartial(object.me) : undefined;
     message.isSuccess = object.isSuccess ?? false;
+    message.isParticipantFound = object.isParticipantFound ?? false;
     message.channel = (object.channel !== undefined && object.channel !== null)
       ? ChannelInitialInfo.fromPartial(object.channel)
       : undefined;
