@@ -163,6 +163,7 @@ describe('After join channel response', () => {
             message: {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
+                    isParticipantFound: true,
                     isSuccess: false,
                 }
             }
@@ -179,6 +180,7 @@ describe('After join channel response', () => {
                         identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
+                    isParticipantFound: true,
                 }
             }
         })
@@ -197,6 +199,7 @@ describe('After join channel response', () => {
                         identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
@@ -234,6 +237,7 @@ describe('After join channel response', () => {
                         identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
@@ -261,6 +265,7 @@ describe('After join channel response', () => {
                         identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: 'fakeChannelId',
                         totalMessages: CHANNEL_MESSAGES_TOTAL_COUNT,
@@ -316,6 +321,7 @@ describe('After message publish', () => {
                         identifier: ME_PARTICIPANT_ID,
                     },
                     isSuccess: true,
+                    isParticipantFound: true,
                 }
             }
         })
@@ -363,6 +369,7 @@ describe('After message publish response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     me: {
                         identifier: ME_PARTICIPANT_ID,
                     }
@@ -407,6 +414,7 @@ describe('After call load more messages', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -436,6 +444,7 @@ describe('After call load more messages', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -465,6 +474,7 @@ describe('After call load more messages', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -515,6 +525,7 @@ describe('Messages total count', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -542,6 +553,7 @@ describe('Messages total count', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -574,6 +586,7 @@ describe('Messages total count', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     me: {
                         identifier: ME_PARTICIPANT_ID,
                     }
@@ -592,6 +605,7 @@ describe('Messages total count', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     me: {
                         identifier: ME_PARTICIPANT_ID,
                     }
@@ -640,6 +654,7 @@ describe('After load messages response', () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
@@ -723,6 +738,7 @@ describe("Find not seen message", () => {
                 $case: "meJoinedToChannel",
                 meJoinedToChannel: {
                     isSuccess: true,
+                    isParticipantFound: true,
                     channel: {
                         channelId: "fakeChannelId",
                         historyMessages: [FAKE_MESSAGE, FAKE_MESSAGE, FAKE_MY_MESSAGE, FAKE_MESSAGE, FAKE_MESSAGE],
