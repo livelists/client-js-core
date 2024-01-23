@@ -13,7 +13,9 @@ import { ChannelParticipants } from '../participant/ChannelParticipants';
 import { LocalParticipant } from '../participant/LocalParticipant';
 import { ConnectionState, ConnectionStates } from './const/ConnectionState';
 import { ChannelEvents, IChannelEmittedEvent } from './const/EmittedEvents';
+import { ScrollToBottomReasons } from './const/ScrollToBottomReasons';
 import { LoadMoreMessagesError, MyLocalParticipantNotExistError } from './errors';
+import { ListLoader } from './ListLoader';
 import { NotSeenCounter } from './NotSeenCounter';
 
 export class Channel {
@@ -27,6 +29,7 @@ export class Channel {
         this.initialPageSize = initialPageSize;
         this.emitter = new EventEmitter();
         this.socket = socket;
+        this.listLoader = new ListLoader(this.emitter);
 
         this.notSeenCounter = new NotSeenCounter({
             socket: this.socket,
@@ -49,6 +52,8 @@ export class Channel {
 
     private socket:IWsConnector;
 
+    private listLoader:ListLoader;
+
     private localParticipant:LocalParticipant|undefined;
 
     private emit (event:IChannelEmittedEvent) {
@@ -60,8 +65,6 @@ export class Channel {
     private recentMessages:LocalMessage[] = [];
 
     private historyMessages:LocalMessage[] = [];
-
-    private isLoadingMore = false;
 
     private messagesTotalCount:number|null = null;
 
@@ -163,15 +166,21 @@ export class Channel {
             [OutBoundWsEvents.SendMessage]: localMessage.getMessageForSending(),
         });
 
-        this.emitShouldScrollBottom();
+        this.emitShouldScrollBottom({
+            reason: ScrollToBottomReasons.MePublishMessage,
+        });
     }
 
     public loadMoreMessages(args:ILoadMoreMessagesArgs) {
-        if (this.isLoadingMore) {
+        if (this.listLoader.isLoading({ isPrev: args.isPrevLoading })) {
             return;
         }
 
-        if ((this.messagesTotalCount || -1) <= this.historyMessages.length + this.recentMessages.length) {
+        if (args.isPrevLoading && this.getFirstLoadedCreatedAt() <= (this.firstMessageCreatedAt || 0)) {
+            return;
+        }
+
+        if (!args.isPrevLoading && this.getLastLoadedCreatedAt() >= (this.lastMessageCreatedAt || 0)) {
             return;
         }
 
@@ -180,13 +189,18 @@ export class Channel {
             [OutBoundWsEvents.LoadMoreMessages]: {
                 channelId: this.channelId,
                 pageSize: args.pageSize,
-                isLoadOlder: true,
-                firstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
+                isLoadPrev: args.isPrevLoading,
+                firstLoadedCreatedAt: args.isPrevLoading
+                    ? this.getFirstLoadedCreatedAt()
+                    : this.getLastLoadedCreatedAt(),
                 skipFromFirstLoaded: args.skipFromFirstLoaded,
             }
         });
 
-        this.updateIsLoadingMore(true);
+        this.listLoader.updateIsLoadingMore({
+            isPrevLoading: args.isPrevLoading,
+            isLoading: true
+        });
     }
 
     private onLoadMoreMessagesRes(args:LoadMoreMessagesRes) {
@@ -206,12 +220,18 @@ export class Channel {
             })
         );
 
-        this.pushMessagesToHistoryList(localMessages);
-        this.updateIsLoadingMore(false);
+        this.pushMessagesToHistoryList({
+            localMessages,
+            isPrev: args.requestInfo?.isLoadPrev || false,
+        });
+
+        this.listLoader.updateIsLoadingMore({
+            isLoading: false,
+            isPrevLoading: args.requestInfo?.isLoadPrev || false,
+        });
     }
 
     private getFirstLoadedCreatedAt ():Date {
-
         if (this.historyMessages?.[0]?.message?.message?.createdAt) {
             return this.historyMessages[0].message.message.createdAt;
         }
@@ -221,6 +241,20 @@ export class Channel {
         return new Date();
     };
 
+    private getLastLoadedCreatedAt():Date {
+        const lastHistoryMessage = this.historyMessages?.[this.historyMessages.length - 1];
+
+        if (lastHistoryMessage?.message?.message?.createdAt) {
+            return lastHistoryMessage.message.message.createdAt;
+        }
+
+        const lastRecentMessage = this.recentMessages?.[this.recentMessages.length - 1];
+        if (lastRecentMessage?.message?.message?.createdAt) {
+            return lastRecentMessage.message.message.createdAt;
+        }
+        return new Date();
+    }
+
     private pushMessageToRecentList (localMessage:LocalMessage) {
         let sentMessageIndex = -1;
 
@@ -228,6 +262,10 @@ export class Channel {
             sentMessageIndex = this.recentMessages.findIndex(
                 (m) => m.message.message.localId = localMessage.message.message.localId
             );
+        } else {
+            this.emitShouldScrollBottom({
+                reason: ScrollToBottomReasons.ForeignNewMessage
+            });
         }
 
         if (sentMessageIndex === -1) {
@@ -245,8 +283,21 @@ export class Channel {
         });
     }
 
-    private pushMessagesToHistoryList (localMessages:LocalMessage[]) {
-        this.historyMessages = [...localMessages, ...this.historyMessages].sort((a, b) => (a.message.message.createdAt?.getTime() || 0) - (b.message.message?.createdAt?.getTime() || 0));
+    private pushMessagesToHistoryList ({
+        localMessages,
+        isPrev,
+    }:{
+        localMessages:LocalMessage[],
+        isPrev: boolean,
+    }) {
+        let resultMessages = [];
+
+        if (isPrev) {
+            resultMessages = [...localMessages, ...this.historyMessages];
+        } else {
+            resultMessages = [...this.historyMessages, ...localMessages];
+        }
+        this.historyMessages = resultMessages.sort((a, b) => (a.message.message.createdAt?.getTime() || 0) - (b.message.message?.createdAt?.getTime() || 0));
         this.emit({
             event: ChannelEvents.HistoryMessagesUpdated,
             data: {
@@ -265,6 +316,10 @@ export class Channel {
             channelId: this.channelId,
         });
         this.pushMessageToRecentList(localMessage);
+
+        if (args.createdAt) {
+            this.lastMessageCreatedAt = args.createdAt;
+        }
     }
 
     private onMeJoinedToChannel (args:MeJoinedToChannel) {
@@ -344,7 +399,10 @@ export class Channel {
                 });
             });
         if (localMessages) {
-            this.pushMessagesToHistoryList(localMessages);
+            this.pushMessagesToHistoryList({
+                localMessages,
+                isPrev: true,
+            });
         }
     };
 
@@ -413,24 +471,16 @@ export class Channel {
         });
     }
 
-    private updateIsLoadingMore(isLoadingMore:boolean) {
-        this.isLoadingMore = isLoadingMore;
-        this.emitIsLoadingMore(isLoadingMore);
-    }
-
-    private emitIsLoadingMore(isLoadingMore:boolean) {
-        this.emit({
-            event: ChannelEvents.IsLoadingMoreUpdated,
-            data: {
-                isLoadingMore,
-            }
-        });
-    }
-
-    private emitShouldScrollBottom() {
+    private emitShouldScrollBottom({
+        reason
+    }:{
+        reason: ScrollToBottomReasons,
+    }) {
         this.emit({
             event: ChannelEvents.ShouldScrollToBottom,
-            data: {}
+            data: {
+                reason,
+            }
         });
     }
 

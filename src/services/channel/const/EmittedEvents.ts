@@ -1,6 +1,7 @@
 import { CustomData } from '../../../proto/models';
 import { LocalMessage } from '../../message/LocalMessage';
 import { ConnectionState } from './ConnectionState';
+import { ScrollToBottomReasons } from './ScrollToBottomReasons';
 
 export enum ChannelEvents {
     RecentMessagesUpdated = 'recentMessagesUpdated',
@@ -36,12 +37,15 @@ export type IIsLoadingMoreUpdated = {
     event: ChannelEvents.IsLoadingMoreUpdated,
     data: {
         isLoadingMore: boolean,
+        isPrevLoading: boolean,
     }
 }
 
 export type IShouldScrollToBottom = {
     event: ChannelEvents.ShouldScrollToBottom,
-    data: {}
+    data: {
+        reason: ScrollToBottomReasons
+    }
 }
 
 export type IInitialInfoUpdated = {

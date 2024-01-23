@@ -16,4 +16,5 @@ export interface IPublishMessageArgs {
 export interface ILoadMoreMessagesArgs {
     pageSize: number,
     skipFromFirstLoaded: number,
+    isPrevLoading: boolean,
 }

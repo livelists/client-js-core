@@ -81,7 +81,7 @@ export interface LoadMoreMessages {
   channelId: string;
   pageSize: number;
   firstLoadedCreatedAt?: Date | undefined;
-  isLoadOlder: boolean;
+  isLoadPrev: boolean;
   skipFromFirstLoaded: number;
 }
 
@@ -89,6 +89,7 @@ export interface LoadMoreMessagesRequestInfo {
   pageSize: number;
   firstLoadedCreatedAt?: Date | undefined;
   skipFromFirstLoaded: number;
+  isLoadPrev: boolean;
 }
 
 export interface LoadMoreMessagesRes {
@@ -1144,7 +1145,7 @@ export const MeJoinedToChannel = {
 };
 
 function createBaseLoadMoreMessages(): LoadMoreMessages {
-  return { channelId: "", pageSize: 0, firstLoadedCreatedAt: undefined, isLoadOlder: false, skipFromFirstLoaded: 0 };
+  return { channelId: "", pageSize: 0, firstLoadedCreatedAt: undefined, isLoadPrev: false, skipFromFirstLoaded: 0 };
 }
 
 export const LoadMoreMessages = {
@@ -1158,8 +1159,8 @@ export const LoadMoreMessages = {
     if (message.firstLoadedCreatedAt !== undefined) {
       Timestamp.encode(toTimestamp(message.firstLoadedCreatedAt), writer.uint32(26).fork()).ldelim();
     }
-    if (message.isLoadOlder === true) {
-      writer.uint32(32).bool(message.isLoadOlder);
+    if (message.isLoadPrev === true) {
+      writer.uint32(32).bool(message.isLoadPrev);
     }
     if (message.skipFromFirstLoaded !== 0) {
       writer.uint32(40).int32(message.skipFromFirstLoaded);
@@ -1184,7 +1185,7 @@ export const LoadMoreMessages = {
           message.firstLoadedCreatedAt = fromTimestamp(Timestamp.decode(reader, reader.uint32()));
           break;
         case 4:
-          message.isLoadOlder = reader.bool();
+          message.isLoadPrev = reader.bool();
           break;
         case 5:
           message.skipFromFirstLoaded = reader.int32();
@@ -1204,7 +1205,7 @@ export const LoadMoreMessages = {
       firstLoadedCreatedAt: isSet(object.firstLoadedCreatedAt)
         ? fromJsonTimestamp(object.firstLoadedCreatedAt)
         : undefined,
-      isLoadOlder: isSet(object.isLoadOlder) ? Boolean(object.isLoadOlder) : false,
+      isLoadPrev: isSet(object.isLoadPrev) ? Boolean(object.isLoadPrev) : false,
       skipFromFirstLoaded: isSet(object.skipFromFirstLoaded) ? Number(object.skipFromFirstLoaded) : 0,
     };
   },
@@ -1215,7 +1216,7 @@ export const LoadMoreMessages = {
     message.pageSize !== undefined && (obj.pageSize = Math.round(message.pageSize));
     message.firstLoadedCreatedAt !== undefined &&
       (obj.firstLoadedCreatedAt = message.firstLoadedCreatedAt.toISOString());
-    message.isLoadOlder !== undefined && (obj.isLoadOlder = message.isLoadOlder);
+    message.isLoadPrev !== undefined && (obj.isLoadPrev = message.isLoadPrev);
     message.skipFromFirstLoaded !== undefined && (obj.skipFromFirstLoaded = Math.round(message.skipFromFirstLoaded));
     return obj;
   },
@@ -1229,14 +1230,14 @@ export const LoadMoreMessages = {
     message.channelId = object.channelId ?? "";
     message.pageSize = object.pageSize ?? 0;
     message.firstLoadedCreatedAt = object.firstLoadedCreatedAt ?? undefined;
-    message.isLoadOlder = object.isLoadOlder ?? false;
+    message.isLoadPrev = object.isLoadPrev ?? false;
     message.skipFromFirstLoaded = object.skipFromFirstLoaded ?? 0;
     return message;
   },
 };
 
 function createBaseLoadMoreMessagesRequestInfo(): LoadMoreMessagesRequestInfo {
-  return { pageSize: 0, firstLoadedCreatedAt: undefined, skipFromFirstLoaded: 0 };
+  return { pageSize: 0, firstLoadedCreatedAt: undefined, skipFromFirstLoaded: 0, isLoadPrev: false };
 }
 
 export const LoadMoreMessagesRequestInfo = {
@@ -1249,6 +1250,9 @@ export const LoadMoreMessagesRequestInfo = {
     }
     if (message.skipFromFirstLoaded !== 0) {
       writer.uint32(24).int32(message.skipFromFirstLoaded);
+    }
+    if (message.isLoadPrev === true) {
+      writer.uint32(32).bool(message.isLoadPrev);
     }
     return writer;
   },
@@ -1269,6 +1273,9 @@ export const LoadMoreMessagesRequestInfo = {
         case 3:
           message.skipFromFirstLoaded = reader.int32();
           break;
+        case 4:
+          message.isLoadPrev = reader.bool();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -1284,6 +1291,7 @@ export const LoadMoreMessagesRequestInfo = {
         ? fromJsonTimestamp(object.firstLoadedCreatedAt)
         : undefined,
       skipFromFirstLoaded: isSet(object.skipFromFirstLoaded) ? Number(object.skipFromFirstLoaded) : 0,
+      isLoadPrev: isSet(object.isLoadPrev) ? Boolean(object.isLoadPrev) : false,
     };
   },
 
@@ -1293,6 +1301,7 @@ export const LoadMoreMessagesRequestInfo = {
     message.firstLoadedCreatedAt !== undefined &&
       (obj.firstLoadedCreatedAt = message.firstLoadedCreatedAt.toISOString());
     message.skipFromFirstLoaded !== undefined && (obj.skipFromFirstLoaded = Math.round(message.skipFromFirstLoaded));
+    message.isLoadPrev !== undefined && (obj.isLoadPrev = message.isLoadPrev);
     return obj;
   },
 
@@ -1305,6 +1314,7 @@ export const LoadMoreMessagesRequestInfo = {
     message.pageSize = object.pageSize ?? 0;
     message.firstLoadedCreatedAt = object.firstLoadedCreatedAt ?? undefined;
     message.skipFromFirstLoaded = object.skipFromFirstLoaded ?? 0;
+    message.isLoadPrev = object.isLoadPrev ?? false;
     return message;
   },
 };
