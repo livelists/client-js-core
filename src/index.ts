@@ -31,6 +31,9 @@ import {
     NotSeenCounterEmittedEvents,
 } from './services/channel/const/NotSeenCounterEmittedEvents';
 import {
+    ScrollToBottomReasons
+} from './services/channel/const/ScrollToBottomReasons';
+import {
     ChannelsAggregation,
 } from './services/channelsAggregation/ChannelsAggregation';
 import {
@@ -118,5 +121,6 @@ export {
     NotSeenCounterEmittedEvents,
     MessageType,
     MessageSubType,
-    IInitialInfoUpdated
+    IInitialInfoUpdated,
+    ScrollToBottomReasons
 };

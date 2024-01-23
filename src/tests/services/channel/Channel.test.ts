@@ -13,6 +13,7 @@ const FAKE_MESSAGE:MessagePB = {
     type: MessageType.ParticipantCreated,
     subType: MessageSubType.TextMessage,
     localId: 'localId',
+    createdAt: new Date(3434343)
 }
 
 const FAKE_MY_MESSAGE:MessagePB = {
@@ -434,8 +435,9 @@ describe('After call load more messages', () => {
         channel.loadMoreMessages({
             pageSize: 10,
             skipFromFirstLoaded: 0,
+            isPrevLoading: true,
         });
-        expect(channel['isLoadingMore']).toBeTruthy();
+        expect(channel['listLoader'].isPrevLoadingMore).toBeTruthy();
     });
 
     it('should not set is loading if already all loaded in history', async () => {
@@ -451,6 +453,8 @@ describe('After call load more messages', () => {
                         totalMessages: 4,
                         notSeenMessagesCount: 2,
                         customData: undefined,
+                        firstMessageCreatedAt: FAKE_MESSAGE.createdAt,
+                        lastSeenMessageCreatedAt: FAKE_MESSAGE.createdAt,
                         participantsOnlineCount: 1,
                         participantsCount: 1,
                     },
@@ -464,8 +468,9 @@ describe('After call load more messages', () => {
         channel.loadMoreMessages({
             pageSize: 10,
             skipFromFirstLoaded: 0,
+            isPrevLoading: true,
         });
-        expect(channel['isLoadingMore']).toBeFalsy();
+        expect(channel['listLoader'].isPrevLoadingMore).toBeFalsy();
     })
 
     it('should set is loading if total count incremented by foreign message', async () => {
@@ -496,8 +501,9 @@ describe('After call load more messages', () => {
         channel.loadMoreMessages({
             pageSize: 10,
             skipFromFirstLoaded: 0,
+            isPrevLoading: true,
         });
-        expect(channel['isLoadingMore']).toBeTruthy();
+        expect(channel['listLoader'].isPrevLoadingMore).toBeTruthy();
     });
 });
 
@@ -699,7 +705,7 @@ describe('After load messages response', () => {
             messages: [],
         });
 
-        expect(channel['isLoadingMore']).toBe(false)
+        expect(channel['listLoader'].isPrevLoadingMore).toBe(false)
     });
 
     it('should push messages to history list', () => {
