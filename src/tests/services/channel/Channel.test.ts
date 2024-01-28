@@ -1,7 +1,7 @@
-import {Channel, ConnectionStates, Message, Message as MessagePB, ParticipantShortInfo} from '../../..';
-import { FakeWSConnector, IFakeWsConnect } from '../../WsConnector.fake';
+import {Channel, ConnectionStates, Message as MessagePB} from '../../..';
+import {FakeWSConnector, IFakeWsConnect} from '../../fakes/WsConnector.fake';
 import {InBoundWsEvents} from "../../../common/const/SocketEvents";
-import {CustomData, MessageSubType, MessageType} from "../../../proto/models";
+import {MessageSubType, MessageType} from "../../../proto/models";
 import {LoadMoreMessagesError, MyLocalParticipantNotExistError} from "../../../services/channel/errors";
 
 const ME_PARTICIPANT_ID = 'meParticipantId';

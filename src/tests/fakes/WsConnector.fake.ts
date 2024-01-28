@@ -1,10 +1,10 @@
-import { InBoundWsEvents } from '../common/const/SocketEvents';
+import { InBoundWsEvents } from '../../common/const/SocketEvents';
 import {
     InBoundMessage,
     OutBoundMessage,
-} from '../proto/events';
-import { IWsConnector } from '../socket/WSConnector';
-import { IOpenConnectionArgs, ISubscribeArgs } from '../types/websocket.types';
+} from '../../proto/events';
+import { IWsConnector } from '../../socket/WSConnector';
+import { IOpenConnectionArgs, ISubscribeArgs } from '../../types/websocket.types';
 
 type OutBoundMessageData = OutBoundMessage['message']
 
@@ -14,7 +14,6 @@ interface IFakeMethods {
 }
 
 export type IFakeWsConnect = IWsConnector & IFakeMethods;
-
 
 export class FakeWSConnector implements IFakeWsConnect {
     public isConnected:boolean = false;
