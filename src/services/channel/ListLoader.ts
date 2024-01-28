@@ -13,6 +13,12 @@ export class ListLoader {
 
     private _isNextLoadingMore = false;
 
+    private _firstMessageCreatedAt:Date|undefined = undefined;
+
+    private _lastMessageCreatedAt:Date|undefined = undefined;
+
+    private isLastWasLoaded:boolean = false;
+
     public isLoading({ isPrev }:{ isPrev:boolean }) {
         if (isPrev) {
             return this.isPrevLoadingMore;
@@ -27,6 +33,42 @@ export class ListLoader {
     
     public get isNextLoadingMore() {
         return this._isNextLoadingMore;
+    }
+
+    public set firstMessageCreatedAt(date:Date | undefined) {
+        this._firstMessageCreatedAt = date;
+    }
+
+    public set lastMessageCreatedAt(date:Date | undefined) {
+        this._lastMessageCreatedAt = date;
+    }
+
+    public checkIsCanLoadMore({
+        isPrevLoading,
+        firstLoadedCreatedAt,
+        lastLoadedCreatedAt
+    }:{
+        isPrevLoading: boolean,
+        firstLoadedCreatedAt: Date,
+        lastLoadedCreatedAt: Date,
+    }):boolean {
+        if (this.isLoading({ isPrev: isPrevLoading })) {
+            return false;
+        }
+
+        if (isPrevLoading && firstLoadedCreatedAt <= (this._firstMessageCreatedAt || 0)) {
+            return false;
+        }
+
+        if (!isPrevLoading && this.isLastWasLoaded) {
+            return false;
+        }
+
+        if (!isPrevLoading && lastLoadedCreatedAt >= (this._lastMessageCreatedAt || 0)) {
+            this.isLastWasLoaded = true;
+            return false;
+        }
+        return true;
     }
 
     public updateIsLoadingMore({
