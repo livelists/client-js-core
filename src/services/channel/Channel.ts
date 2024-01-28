@@ -68,10 +68,6 @@ export class Channel {
 
     private messagesTotalCount:number|null = null;
 
-    private firstMessageCreatedAt:Date|undefined = undefined;
-
-    private lastMessageCreatedAt:Date|undefined = undefined;
-
     private findMessageById(messageId:string):MessagePB|undefined {
         return this.historyMessages.find((hm) => hm.message.message.id === messageId)?.message?.message;
     }
@@ -172,15 +168,11 @@ export class Channel {
     }
 
     public loadMoreMessages(args:ILoadMoreMessagesArgs) {
-        if (this.listLoader.isLoading({ isPrev: args.isPrevLoading })) {
-            return;
-        }
-
-        if (args.isPrevLoading && this.getFirstLoadedCreatedAt() <= (this.firstMessageCreatedAt || 0)) {
-            return;
-        }
-
-        if (!args.isPrevLoading && this.getLastLoadedCreatedAt() >= (this.lastMessageCreatedAt || 0)) {
+        if (!this.listLoader.checkIsCanLoadMore({
+            isPrevLoading: args.isPrevLoading,
+            firstLoadedCreatedAt: this.getFirstLoadedCreatedAt(),
+            lastLoadedCreatedAt: this.getLastLoadedCreatedAt(),
+        })) {
             return;
         }
 
@@ -209,8 +201,8 @@ export class Channel {
         }
 
         this.messagesTotalCount = args.totalMessages;
-        this.firstMessageCreatedAt = args.firstMessageCreatedAt;
-        this.lastMessageCreatedAt = args.lastMessageCreatedAt;
+        this.listLoader.firstMessageCreatedAt = args.firstMessageCreatedAt;
+        this.listLoader.lastMessageCreatedAt = args.lastMessageCreatedAt;
 
         const localMessages = args.messages?.map(
             (m) => new LocalMessage({
@@ -318,7 +310,7 @@ export class Channel {
         this.pushMessageToRecentList(localMessage);
 
         if (args.createdAt) {
-            this.lastMessageCreatedAt = args.createdAt;
+            this.listLoader.lastMessageCreatedAt = args.createdAt;
         }
     }
 
@@ -336,8 +328,9 @@ export class Channel {
 
         this.localParticipant = createdParticipant;
         this.messagesTotalCount = args.channel?.totalMessages || null;
-        this.firstMessageCreatedAt = args.channel?.firstMessageCreatedAt;
-        this.lastMessageCreatedAt = args.channel?.lastMessageCreatedAt;
+
+        this.listLoader.firstMessageCreatedAt = args.channel?.firstMessageCreatedAt;
+        this.listLoader.lastMessageCreatedAt = args.channel?.lastMessageCreatedAt;
 
         if (args.channel) {
             this.notSeenCounter.setInitialData({
